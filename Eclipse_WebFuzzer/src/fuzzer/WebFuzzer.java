@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.gargoylesoftware.htmlunit.CookieManager;
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.DomAttr;
@@ -14,6 +15,7 @@ import com.gargoylesoftware.htmlunit.html.DomElement;
 import com.gargoylesoftware.htmlunit.html.DomNodeList;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import com.gargoylesoftware.htmlunit.util.Cookie;
 
 /**
  * Web Fuzzer for team 'Denial of Service'.
@@ -42,6 +44,7 @@ public class WebFuzzer
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
 		WebClient client = new WebClient();
+		CookieManager cookieMgmt = client.getCookieManager();
 		HtmlPage page = client.getPage(pageUrl);
 		DomNodeList<DomElement> inputs = page.getElementsByTagName("input");
 		
@@ -57,6 +60,18 @@ public class WebFuzzer
 			{
 				System.out.println("input id: " + attrNode.getValue() + " => " + e.asXml());
 			}
+		}
+		
+		// Print an extra new line to improve formatting
+		System.out.println();
+
+		System.out.println("Cookies:");
+		
+		Set<Cookie> cookies = cookieMgmt.getCookies();
+		
+		for(Cookie c: cookies)
+		{
+			System.out.println(c.toString());
 		}
 		
 		// Print an extra new line to improve formatting
