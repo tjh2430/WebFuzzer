@@ -46,6 +46,8 @@ public class WebFuzzer
 		WebClient client = new WebClient();
 		CookieManager cookieMgmt = client.getCookieManager();
 		HtmlPage page = client.getPage(pageUrl);
+		URL url = new URL(pageUrl);
+		
 		DomNodeList<DomElement> inputs = page.getElementsByTagName("input");
 		
 		System.out.printf("\"%s\" Inputs:\n\n", pageUrl);
@@ -62,6 +64,9 @@ public class WebFuzzer
 			}
 		}
 		
+		//Prints Query parameter in URL
+		System.out.println("Url Query: " + url.getQuery());
+		
 		// Print an extra new line to improve formatting
 		System.out.println();
 
@@ -74,8 +79,8 @@ public class WebFuzzer
 			System.out.println(c.toString());
 		}
 		
-		// Print an extra new line to improve formatting
-		System.out.println();
+		// Print an extra line to help separate different pages
+		System.out.println("\n--------------------------------------------------------------------------------------------\n");
 		
 		List<HtmlAnchor> links = getLinks(pageUrl);
 		for(HtmlAnchor link: links)
