@@ -9,12 +9,14 @@ import java.util.Set;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.html.DomAttr;
 import com.gargoylesoftware.htmlunit.html.DomElement;
 import com.gargoylesoftware.htmlunit.html.DomNodeList;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+
 /**
- * Web Fuzzer for team 'Denial of Service'
+ * Web Fuzzer for team 'Denial of Service'.
  * 
  * @author Eric Newman
  * @author Ross Kahn
@@ -31,46 +33,89 @@ public class WebFuzzer
 		
 	}
 	
-	/*
-	 * Method to start crawling the page
+	/**
+	 * Attempts to find all possible inputs for given pageUrl as well as any 
+	 * pages within the site (i.e. start with the same base URL) which are 
+	 * linked to from that page's URL.
 	 */
-	public static void fuzz(String url, Set<String> previousUrls) throws FailingHttpStatusCodeException, MalformedURLException, IOException
+	public static void fuzz(String baseUrl, String pageUrl, Set<String> previousUrls)
+		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
 		WebClient client = new WebClient();
-		HtmlPage page = client.getPage(url);
+		HtmlPage page = client.getPage(pageUrl);
 		DomNodeList<DomElement> inputs = page.getElementsByTagName("input");
 		
-		System.out.printf("\"%s\" Inputs:\n", url);
+		System.out.printf("\"%s\" Inputs:\n\n", pageUrl);
 		for(DomElement e: inputs){
-			System.out.println(e.asText());
+			DomAttr attrNode = e.getAttributeNode("id");
+			
+			if(attrNode == null)
+			{
+				System.out.println("id-less input: " + e.asXml());
+			}
+			else
+			{
+				System.out.println("input id: " + attrNode.getValue() + " => " + e.asXml());
+			}
 		}
 		
 		// Print an extra new line to improve formatting
 		System.out.println();
 		
-		List<HtmlAnchor> links = getLinks(url);
+		List<HtmlAnchor> links = getLinks(pageUrl);
 		for(HtmlAnchor link: links)
 		{
 			String linkUrl = page.getFullyQualifiedUrl(link.getHrefAttribute()).toString();
-			if(previousUrls.contains(linkUrl))
+			if(previousUrls.contains(linkUrl) || !linkUrl.startsWith(baseUrl))
 			{
 				continue;
 			}
 						
 			previousUrls.add(linkUrl);
-			fuzz(linkUrl, previousUrls);			
+			fuzz(baseUrl, linkUrl, previousUrls);			
 		}
 	}
 	
-	public static List<HtmlAnchor> getLinks(String url) throws FailingHttpStatusCodeException, MalformedURLException, IOException
+	public static List<HtmlAnchor> getLinks(String url)
+		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
 		WebClient client = new WebClient();
 		HtmlPage page = client.getPage(url);
 		
 		return page.getAnchors();
 	}
+
+	private static String getBaseUrl(String url)
+	{
+		if(url == null || url.isEmpty())
+		{
+			return null;
+		}
+		
+		int domainStart = url.indexOf("://");
+		
+		// If the pattern "://" cannot be found in the given URL string or if
+		// that pattern only occurs at the end of the string then no base URL
+		// can be extracted
+		if(domainStart == -1 || (domainStart + 1) >= url.length())
+		{
+			return null;
+		}		
+		
+		int baseUrlEnd = url.indexOf("/", (domainStart + 1));
+		
+		// If the given URL string does not contain any more forward slashes
+		// after the initial two for "http://" or "https://" then the URL is
+		// already in its base form
+		if(baseUrlEnd == -1)
+		{
+			return url;
+		}
+		
+		return url.substring(0, baseUrlEnd);
+	}
 	
-	/*
+	/**
 	 * Main method to run from command line.
 	 */
 	public static void main (String[] args)
@@ -82,7 +127,8 @@ public class WebFuzzer
 		}
 		
 		try {
-			fuzz(args[0], new HashSet<String>());			
+			String baseUrl = getBaseUrl(args[0]);
+			fuzz(baseUrl, args[0], new HashSet<String>());			
 		} catch (FailingHttpStatusCodeException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
