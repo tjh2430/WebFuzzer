@@ -1,5 +1,20 @@
 package fuzzer;
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Set;
+
+import com.gargoylesoftware.htmlunit.CookieManager;
+import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
+import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.html.DomAttr;
+import com.gargoylesoftware.htmlunit.html.DomElement;
+import com.gargoylesoftware.htmlunit.html.DomNodeList;
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import com.gargoylesoftware.htmlunit.util.Cookie;
+
 /**
  * Provides an interface for managing and interacting with vulnerability
  * information for a specific web page (i.e. a single URL).
@@ -10,10 +25,80 @@ package fuzzer;
  */
 public class WebPage
 {
-	private String url;
+	private WebClient client;
+	private CookieManager cookieMgmt;
+	private HtmlPage page;
+	private URL url;
+	private DomNodeList<DomElement> inputs;
 	
-	public WebPage(String url)
+	/**
+	 * Private constructor for creating a WebPage for the page at the given URL. 
+	 */
+	private WebPage(String pageUrl) 
+		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
-		this.url = url;
+		this.client = new WebClient();
+		this.cookieMgmt = client.getCookieManager();
+		this.page = client.getPage(pageUrl);
+		this.url = new URL(pageUrl);
+		this.inputs = page.getElementsByTagName("input");
+	}
+	
+	public WebClient getClient()
+	{
+		return client;
+	}
+
+	public CookieManager getCookieMgmt()
+	{
+		return cookieMgmt;
+	}
+
+	public HtmlPage getPage()
+	{
+		return page;
+	}
+	
+	public URL getUrl()
+	{
+		return url;
+	}
+
+	public DomNodeList<DomElement> getInputs()
+	{
+		return inputs;
+	}
+
+	public void writeVulnerabilityToStream(PrintStream outputStream)
+	{
+		for(DomElement e: inputs)
+		{
+			DomAttr attrNode = e.getAttributeNode("id");
+			
+			if(attrNode == null)
+			{
+				outputStream.println("id-less input: " + e.asXml());
+			}
+			else
+			{
+				outputStream.println("input id: " + attrNode.getValue() + " => " + e.asXml());
+			}
+		}
+		
+		//Prints Query parameter in URL
+		outputStream.println("Url Query: " + url.getQuery());
+		
+		Set<Cookie> cookies = cookieMgmt.getCookies();
+		for(Cookie c: cookies)
+		{
+			outputStream.println(c.toString());
+		}		
+	}
+
+	public static WebPage performDiscoveryOnPage(String url) 
+		throws FailingHttpStatusCodeException, MalformedURLException, IOException
+	{
+		WebPage webPage = new WebPage(url);
+		return webPage;
 	}
 }
