@@ -29,12 +29,14 @@ public class SiteInformationManager
 	 * Private constructor for creating a SiteInformationManager for the site 
 	 * at the given URL.  
 	 */
-	private SiteInformationManager(String url)
+	private SiteInformationManager(String url, FuzzerData configurationData)
 	{
 		// TODO: Add any necessary error/exception checking (such as
 		// for illegal/invalid URLs)
 		this.baseUrl = getBaseUrl(url);
 		this.webPages = new HashMap<String, WebPage>();
+		
+		// TODO: Make use of the configurationData parameter
 	}
 	
 	/**
@@ -84,9 +86,12 @@ public class SiteInformationManager
 	}
 	
 	// Specify time gap (what exactly does this mean?)
-	// Turn password guesses on or off
 	// Specify completeness option
-	
+	// Turn password guesses on or off??
+	public void configure(FuzzerData configurationData)
+	{
+		// TODO: Implement
+	}
 	
 	// Check for lack of sanitization (different from fuzz vectors??)
 	// Run external list of fuzz vectors
@@ -136,10 +141,10 @@ public class SiteInformationManager
 	}
 	
 	// TODO: Add comment
-	public static SiteInformationManager discoverAttackSurface(String baseUrl) 
+	public static SiteInformationManager discoverAttackSurface(String baseUrl, FuzzerData configurationData) 
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
-		SiteInformationManager informationManager = new SiteInformationManager(baseUrl);
+		SiteInformationManager informationManager = new SiteInformationManager(baseUrl, configurationData);
 		informationManager.performDiscoveryOnSite(baseUrl);		
 		
 		return informationManager;
