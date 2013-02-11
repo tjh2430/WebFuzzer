@@ -3,7 +3,6 @@ package fuzzer;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -30,7 +29,7 @@ public class WebFuzzer
 	/**
 	 * Default WebFuzzer constructor.
 	 */
-	public WebFuzzer( URL url )
+	public WebFuzzer(  )
 	{
 		
 	}
@@ -105,7 +104,7 @@ public class WebFuzzer
 		return page.getAnchors();
 	}
 
-	private static String getBaseUrl(String url)
+	public static String getBaseUrl(String url)
 	{
 		if(url == null || url.isEmpty())
 		{
@@ -135,31 +134,5 @@ public class WebFuzzer
 		return url.substring(0, baseUrlEnd);
 	}
 	
-	/**
-	 * Main method to run from command line.
-	 */
-	public static void main (String[] args)
-	{
-		if(args.length != 1)
-		{
-			System.out.println("Usage: java WebFuzzer <url>");
-			return;
-		}
-		
-		try {
-			String baseUrl = getBaseUrl(args[0]);
-			fuzz(baseUrl, args[0], new HashSet<String>());			
-		} catch (FailingHttpStatusCodeException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		
-	}
+	
 }
