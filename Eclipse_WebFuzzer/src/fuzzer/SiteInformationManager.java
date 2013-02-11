@@ -1,8 +1,14 @@
 package fuzzer;
 
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +103,42 @@ public class SiteInformationManager
 	// Run external list of fuzz vectors
 	public void runFuzzVectors(String fuzzVectorFileName)
 	{
-		// TODO: Implement
+		List<String> vectors = new ArrayList<String>();
+		
+		FileInputStream fstream;
+		try 
+		{
+			fstream = new FileInputStream(fuzzVectorFileName);
+			DataInputStream in = new DataInputStream(fstream);
+			BufferedReader br = new BufferedReader(new InputStreamReader(in));
+			String line;
+			
+			while((line = br.readLine()) != null){
+				vectors.add(line);
+			}
+			
+			br.close();
+			
+		} 
+		catch (FileNotFoundException e) 
+		{
+			System.out.println("Fuzz Vector File Not Found");
+			e.printStackTrace();
+			return;
+		}
+		catch (IOException e) 
+		{
+			e.printStackTrace();
+			return;
+		}
+		
+		//for(/*TODO: Iterate through inputs*/)
+		//{
+			for(String vector: vectors)
+			{
+				//TODO: Bombard input! 
+			}
+		//}
 	}
 	
 	// TODO: Implement checks on all responses received
