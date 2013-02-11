@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<form name="stupid_form" onsubmit="validateForm()">
+Username: <input type="text" name="user"><br>
+Password: <input type="password" name="password"><br>
+<input type="submit" value="Submit">
+</form>
+
+<p><b>Note:</b> The characters in a password field are masked (shown as asterisks or circles).</p>
+
+</body>
+
+<script>
+function validateForm()
+{
+var x=document.forms["stupid_form"]["user"].value;
+var y=document.forms["stupid_form"]["password"].value;
+if (x!="user" || y!="password")
+  {
+  alert("Not authenticated. Username must be \"user\" and password must be \"password\"");
+  return false;
+  }
+else
+  {
+  alert("Congratulations! You just authenticated into one of the most insecure forms ever!")
+  return true;
+  }
+}
+</script>
+
+</html>
+

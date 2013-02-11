@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import com.gargoylesoftware.htmlunit.CookieManager;
@@ -12,6 +14,7 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.DomAttr;
 import com.gargoylesoftware.htmlunit.html.DomElement;
 import com.gargoylesoftware.htmlunit.html.DomNodeList;
+import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.Cookie;
 
@@ -29,7 +32,11 @@ public class WebPage
 	private CookieManager cookieMgmt;
 	private HtmlPage page;
 	private URL url;
-	private DomNodeList<DomElement> inputs;
+	
+	// TODO: Remove
+	//private DomNodeList<DomElement> inputs;
+
+	private Map<DomElement, DomNodeList<HtmlElement>> formInputs;
 	
 	/**
 	 * Private constructor for creating a WebPage for the page at the given URL. 
@@ -41,7 +48,17 @@ public class WebPage
 		this.cookieMgmt = client.getCookieManager();
 		this.page = client.getPage(pageUrl);
 		this.url = new URL(pageUrl);
-		this.inputs = page.getElementsByTagName("input");
+		
+		formInputs = new HashMap<DomElement, DomNodeList<HtmlElement>>();
+		DomNodeList<DomElement> forms = page.getElementsByTagName("form");
+		
+		for(DomElement form: forms)
+		{
+			formInputs.put(form, form.getElementsByTagName("input"));
+		}
+		
+		// TODO: Remove
+		//this.inputs = page.getElementsByTagName("input");
 	}
 	
 	public WebClient getClient()
@@ -63,30 +80,47 @@ public class WebPage
 	{
 		return url;
 	}
-
-	public DomNodeList<DomElement> getInputs()
+	
+	public Set<DomElement> getForms()
 	{
-		return inputs;
+		return formInputs.keySet();
 	}
 
-	public void writeVulnerabilityToStream(PrintStream outputStream)
+	public void writeReport(PrintStream outputStream)
 	{
-		for(DomElement e: inputs)
+		for(DomElement form: formInputs.keySet())
 		{
-			DomAttr attrNode = e.getAttributeNode("id");
+			DomAttr formAttrNode = form.getAttributeNode("id");
 			
-			if(attrNode == null)
+			if(formAttrNode == null)
 			{
-				outputStream.println("id-less input: " + e.asXml());
+				outputStream.println("Outputs for an id-less form\n");
 			}
 			else
 			{
-				outputStream.println("input id: " + attrNode.getValue() + " => " + e.asXml());
+				outputStream.println("form id: " + formAttrNode.getValue() + "\n");
+			}
+			
+			for(DomElement e: form.getElementsByTagName("input"))
+			{
+				DomAttr attrNode = e.getAttributeNode("id");
+				
+				if(attrNode == null)
+				{
+					outputStream.println("id-less input: " + e.asXml());
+				}
+				else
+				{
+					outputStream.println("input id: " + attrNode.getValue() + " => " + e.asXml());
+				}
 			}
 		}
 		
+		// New line for formatting
+		outputStream.println("");
+		
 		//Prints Query parameter in URL
-		outputStream.println("Url Query: " + url.getQuery());
+		outputStream.println("Url Query: " + url.getQuery() + "\n");
 		
 		Set<Cookie> cookies = cookieMgmt.getCookies();
 		for(Cookie c: cookies)

@@ -1,6 +1,7 @@
 package fuzzer;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.List;
@@ -82,6 +83,58 @@ public class SiteInformationManager
 		return webPages.get(url);
 	}
 	
+	// Specify time gap (what exactly does this mean?)
+	// Turn password guesses on or off
+	// Specify completeness option
+	
+	
+	// Check for lack of sanitization (different from fuzz vectors??)
+	// Run external list of fuzz vectors
+	public void runFuzzVectors(String fuzzVectorFileName)
+	{
+		// TODO: Implement
+	}
+	
+	// TODO: Implement checks on all responses received
+	// Sensitive data??? ("mysql", stack-traces, raw exceptions, etc.)
+	
+	// Password authentication
+	// -> Allow user to specify a username and password as well as which
+	//    input fields they should be sent to
+	/**
+	 * 
+	 * @param webPage
+	 * @param formId
+	 * @param inputIdsToValues	A mapping of input tag ids to the input values to put into them
+	 */
+	public void submitInputs(WebPage webPage, String formId, Map<String, String> inputIdsToValues)
+	{
+		// TODO: Implement
+	}
+	
+	/**
+	 * Writes a detailed report on the vulnerability and attack surface 
+	 * information which has been discovered for the site being examined.
+	 *
+	 * @param outputStream	The PrintStream to write the report to
+	 */
+	public void writeReport(PrintStream outputStream)
+	{
+		// TODO: Add report header
+		outputStream.println("------------------------------------------------------------------------------");
+		outputStream.println("Report for site based at " + baseUrl + "\n");
+		
+		
+		for(String url: webPages.keySet())
+		{
+			outputStream.println("------------------------------------------------------------------------------");
+			outputStream.println("Page: " + url + "\n");
+			webPages.get(url).writeReport(outputStream);
+		}
+		
+		outputStream.println("------------------------------------------------------------------------------");
+	}
+	
 	// TODO: Add comment
 	public static SiteInformationManager discoverAttackSurface(String baseUrl) 
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
@@ -99,6 +152,7 @@ public class SiteInformationManager
 	{
 		if(url == null || url.isEmpty())
 		{
+			
 			return null;
 		}
 		
