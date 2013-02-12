@@ -24,6 +24,7 @@ public class SiteInformationManager
 {
 	private String baseUrl;
 	private Map<String, WebPage> webPages;
+	private FuzzerData configurations;
 	
 	/**
 	 * Private constructor for creating a SiteInformationManager for the site 
@@ -90,7 +91,7 @@ public class SiteInformationManager
 	// Turn password guesses on or off??
 	public void configure(FuzzerData configurationData)
 	{
-		// TODO: Implement
+		this.configurations = configurationData;
 	}
 	
 	// Check for lack of sanitization (different from fuzz vectors??)
@@ -102,6 +103,7 @@ public class SiteInformationManager
 	
 	// TODO: Implement checks on all responses received
 	// Sensitive data??? ("mysql", stack-traces, raw exceptions, etc.)
+	//
 	
 	// Password authentication
 	// -> Allow user to specify a username and password as well as which
