@@ -32,10 +32,6 @@ public class WebPage
 	private CookieManager cookieMgmt;
 	private HtmlPage page;
 	private URL url;
-	
-	// TODO: Remove
-	//private DomNodeList<DomElement> inputs;
-
 	private Map<DomElement, DomNodeList<HtmlElement>> formInputs;
 	
 	/**
@@ -56,9 +52,6 @@ public class WebPage
 		{
 			formInputs.put(form, form.getElementsByTagName("input"));
 		}
-		
-		// TODO: Remove
-		//this.inputs = page.getElementsByTagName("input");
 	}
 	
 	public WebClient getClient()
