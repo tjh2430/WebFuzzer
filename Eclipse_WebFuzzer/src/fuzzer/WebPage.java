@@ -4,8 +4,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 import com.gargoylesoftware.htmlunit.CookieManager;
@@ -13,8 +12,6 @@ import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.DomAttr;
 import com.gargoylesoftware.htmlunit.html.DomElement;
-import com.gargoylesoftware.htmlunit.html.DomNodeList;
-import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.Cookie;
 
@@ -32,7 +29,8 @@ public class WebPage
 	private CookieManager cookieMgmt;
 	private HtmlPage page;
 	private URL url;
-	private Map<DomElement, DomNodeList<HtmlElement>> formInputs;
+	private List<WebForm> webForms;
+	private boolean authenticationRequired;
 	
 	/**
 	 * Private constructor for creating a WebPage for the page at the given URL. 
@@ -44,13 +42,20 @@ public class WebPage
 		this.cookieMgmt = client.getCookieManager();
 		this.page = client.getPage(pageUrl);
 		this.url = new URL(pageUrl);
+				
+		this.webForms = WebForm.toWebForms(page.getElementsByTagName("form"));
 		
-		formInputs = new HashMap<DomElement, DomNodeList<HtmlElement>>();
-		DomNodeList<DomElement> forms = page.getElementsByTagName("form");
+		// Authentication is considered to be required if any form on this web 
+		// page contains at least one password input field.
+		this.authenticationRequired = false;
 		
-		for(DomElement form: forms)
+		for(WebForm form: webForms)
 		{
-			formInputs.put(form, form.getElementsByTagName("input"));
+			if(form.requiresAuthentication())
+			{
+				this.authenticationRequired = true;
+				break;
+			}
 		}
 	}
 	
@@ -74,16 +79,30 @@ public class WebPage
 		return url;
 	}
 	
-	public Set<DomElement> getForms()
+	public List<WebForm> getForms()
 	{
-		return formInputs.keySet();
+		return webForms;
 	}
 
+	public boolean requiresAuthentication()
+	{
+		return authenticationRequired;
+	}
+	
+	public boolean attemptAuthentication(String username, String password)
+	{
+		// TODO: Implement => need to figure out how to determine whether or not
+		// an authentication attempt was successful as well as how to get to the
+		// authenticated version of the page/ the page past the login page 
+		// programatically
+		return false;
+	}
+	
 	public void writeReport(PrintStream outputStream)
 	{
-		for(DomElement form: formInputs.keySet())
+		for(WebForm form: webForms)
 		{
-			DomAttr formAttrNode = form.getAttributeNode("id");
+			DomAttr formAttrNode = form.getForm().getAttributeNode("id");
 			
 			if(formAttrNode == null)
 			{
@@ -94,7 +113,7 @@ public class WebPage
 				outputStream.println("form id: " + formAttrNode.getValue() + "\n");
 			}
 			
-			for(DomElement e: form.getElementsByTagName("input"))
+			for(DomElement e: form.getInputs())
 			{
 				DomAttr attrNode = e.getAttributeNode("id");
 				

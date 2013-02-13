@@ -17,9 +17,8 @@ import java.util.StringTokenizer;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.html.DomElement;
-import com.gargoylesoftware.htmlunit.html.DomNodeList;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
-import com.gargoylesoftware.htmlunit.html.HtmlElement;
+import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 
 /**
  * Provides a consolidated interface for accessing and managing vulnerability
@@ -47,21 +46,29 @@ public class SiteInformationManager
 		this.webPages = new HashMap<String, WebPage>();
 	}
 	
+	/**
+	 * Initiate attack surface discovery using the currently loaded configurations.
+	 * Attempts to find all possible inputs for every page on the site by following
+	 * links to pages with the same base URL as well as attempting to access the 
+	 * pages in the current pageGuesses list (taken from the configuration data 
+	 * file). If any pages requiring authentication are encountered the set of 
+	 * default login credentials provided in the configuration files will be used,
+	 * unless password guessing is currently turned on, in which case the application
+	 * will attempt to guess the password for the username provided in the 
+	 * configuration file. If no username was provided in the configuration file or
+	 * if a username was provided but no password was provided and password guessing
+	 * is turned off then authentication will not be attempted and password fields
+	 * will be treated the same as any other input.
+	 */
 	public void performDiscovery() 
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
-		performDiscoveryOnSite(baseUrl);
-	}
-	
-	/**
-	 * Attempts to find all possible inputs for given pageUrl as well as any 
-	 * pages within the site (i.e. start with the same base URL) which are 
-	 * linked to from that page's URL.
-	 */
-	private void performDiscoveryOnSite(String baseUrl)
-		throws FailingHttpStatusCodeException, MalformedURLException, IOException
-	{
+		// Note: It is important that page guessing be attempted after conventional
+		// page discovery has been performed because otherwise the page guessing
+		// method may inaccurately report that there are no links to a page when
+		// in fact links do exist, they just haven't been explored yet.
 		performDiscoveryOnUrl(baseUrl, baseUrl);
+		performPageGuessing();
 	}
 	
 	private void performDiscoveryOnUrl(String baseUrl, String pageUrl) 
@@ -70,16 +77,90 @@ public class SiteInformationManager
 		WebPage webPage = WebPage.performDiscoveryOnPage(pageUrl);
 		webPages.put(pageUrl, webPage);
 		
+		if(webPage.requiresAuthentication())
+		{
+			boolean authenticationSuccessful = false;
+
+			String username = configurations.getUsername();
+			String password; 
+					
+			if(configurations.passwordGuessingIsOn())
+			{
+				password = null;
+				
+				// TODO: Account for whether full or random completeness is on
+				for(String word: passwordDictionary)
+				{
+					authenticationSuccessful = webPage.attemptAuthentication(username, word);
+					
+					if(authenticationSuccessful)
+					{
+						password = word;
+						break;
+					}
+				}
+			}
+			else
+			{
+				password = configurations.getPassword();
+				authenticationSuccessful = webPage.attemptAuthentication(username, password);
+			}
+			
+			if(authenticationSuccessful)
+			{
+				// TODO: Figure out how to handle and log successfuly vs.
+				// unsuccessful authentication
+			}
+			else
+			{
+				
+			}
+		}
+		
 		List<HtmlAnchor> links = webPage.getPage().getAnchors(); 
 		for(HtmlAnchor link: links)
 		{
 			String linkUrl = webPage.getPage().getFullyQualifiedUrl(link.getHrefAttribute()).toString();
+
+			// If the page URL is not a part of the site being fuzzed of if this 
+			// page URL has already been discovered then nothing needs to be done
 			if(webPages.containsKey(linkUrl) || !linkUrl.startsWith(baseUrl))
 			{
 				continue;
 			}
 						
 			performDiscoveryOnUrl(baseUrl, linkUrl);			
+		}
+	}
+	
+	private void performPageGuessing()
+	{
+		for(String pageGuess: pageGuesses)
+		{
+			String linkUrl;
+			
+			if(baseUrl.endsWith("/"))
+			{
+				linkUrl = baseUrl + pageGuess;
+			}
+			else
+			{
+				linkUrl = baseUrl + "/" + pageGuess;
+			}
+			
+			// If this page URL has already been discovered then nothing needs to
+			// be done
+			if(webPages.containsKey(linkUrl))
+			{
+				continue;
+			}
+			
+			// TODO: Check if the current guess URL is actually a valid URL
+			// and if so, log the fact that an unlinked page was discovered for the
+			// site and then perform discovery (i.e. follow links) for this page,
+			// logging any pages which can only be reached from this unlinked page
+			// (i.e. any previously undiscovered pages which are found by following
+			// links on the newly found page if possible).
 		}
 	}
 	
@@ -264,32 +345,73 @@ public class SiteInformationManager
 	// Check for lack of sanitization (different from fuzz vectors??)
 	// Run external list of fuzz vectors
 	public void runFuzzVectors()
+		throws IOException
 	{
 		
 		for(String pageName: webPages.keySet())
 		{
 			WebPage page = webPages.get(pageName);
 			
-			for(DomElement form: page.getForms())
+			for(WebForm form: page.getForms())
 			{
-				
-				for(DomElement input:form.getElementsByTagName("input"))
+				List<HtmlSubmitInput> submitFields = form.getSubmitFields();
+				if(submitFields.isEmpty())
 				{
-					//TODO: Get submit element
+					// If the form cannot be submitted then nothing can be done
+					// with this form
+					break;
+				}
+				
+				for(DomElement input: form.getInputs())
+				{
 					
 					for(String vector: vectors)
 					{
 						//TODO: Bombard input! 
+						
+						// Submits the form
+						submitFields.get(0).click();
 					}
 				}
-				
 			}
 		}
 	}
 	
+	/**
+	 * Performs fuzz testing on the currently discovered attack surface using 
+	 * the currently loaded configurations and logs the results.
+	 */
 	public void performFuzzing()
+		throws IOException
 	{
-		// TODO: Implement (Tim)
+		for(String pageName: webPages.keySet())
+		{
+			WebPage page = webPages.get(pageName);
+			
+			for(WebForm form: page.getForms())
+			{
+				List<HtmlSubmitInput> submitFields = form.getSubmitFields();
+				if(submitFields.isEmpty())
+				{
+					// If the form cannot be submitted then nothing can be done
+					// with this form
+					break;
+				}
+				
+				for(DomElement input: form.getInputs())
+				{
+					for(String vector: vectors)
+					{
+						//TODO: Bombard input! 
+
+						// Submits the form
+						submitFields.get(0).click();
+					}
+					
+					// TODO: Run other inputs/checking (sensitive data, etc)
+				}
+			}
+		}
 	}
 	
 	/**

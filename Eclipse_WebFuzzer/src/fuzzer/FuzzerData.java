@@ -77,7 +77,7 @@ public class FuzzerData {
 		this.dataFileName = dataFileName;
 	}
 
-	public boolean isPasswordGuessing() {
+	public boolean passwordGuessingIsOn() {
 		return passwordGuessing;
 	}
 
