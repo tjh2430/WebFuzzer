@@ -4,11 +4,13 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import com.gargoylesoftware.htmlunit.CookieManager;
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
+import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.DomAttr;
 import com.gargoylesoftware.htmlunit.html.DomElement;
@@ -30,6 +32,7 @@ public class WebPage
 	private HtmlPage page;
 	private URL url;
 	private List<WebForm> webForms;
+	private List<WebForm> formsWithAuthentication;
 	private boolean authenticationRequired;
 	
 	/**
@@ -44,6 +47,7 @@ public class WebPage
 		this.url = new URL(pageUrl);
 				
 		this.webForms = WebForm.toWebForms(page.getElementsByTagName("form"));
+		this.formsWithAuthentication = new ArrayList<WebForm>();
 		
 		// Authentication is considered to be required if any form on this web 
 		// page contains at least one password input field.
@@ -54,11 +58,11 @@ public class WebPage
 			if(form.requiresAuthentication())
 			{
 				this.authenticationRequired = true;
-				break;
+				formsWithAuthentication.add(form);
 			}
 		}
 	}
-	
+
 	public WebClient getClient()
 	{
 		return client;
@@ -83,19 +87,24 @@ public class WebPage
 	{
 		return webForms;
 	}
+	
+	public List<WebForm> getFormsWithAuthentication()
+	{
+		return formsWithAuthentication;
+	}
 
 	public boolean requiresAuthentication()
 	{
 		return authenticationRequired;
 	}
 	
-	public boolean attemptAuthentication(String username, String password)
+	public Page attemptAuthentication(WebForm form, String username, String password)
 	{
 		// TODO: Implement => need to figure out how to determine whether or not
 		// an authentication attempt was successful as well as how to get to the
 		// authenticated version of the page/ the page past the login page 
 		// programatically
-		return false;
+		return null;
 	}
 	
 	public void writeReport(PrintStream outputStream)

@@ -24,15 +24,15 @@ public class WebForm
 {
 	private DomElement form;
 	private DomNodeList<HtmlElement> inputs;
-	private List<HtmlSubmitInput> submitFields;
-	private List<HtmlPasswordInput> passwordFields;
+	private HtmlSubmitInput submitField;
+	private HtmlPasswordInput passwordField;
 	
 	public WebForm(DomElement form)
 	{
 		this.form = form;
 		this.inputs = form.getElementsByTagName("input");
-		this.submitFields = new ArrayList<HtmlSubmitInput>();
-		this.passwordFields = new ArrayList<HtmlPasswordInput>();
+		this.submitField = null;
+		this.passwordField = null;
 		
 		for(HtmlElement input: inputs)
 		{
@@ -45,11 +45,11 @@ public class WebForm
 			}
 			else if(inputType.equals("password"))
 			{
-				passwordFields.add((HtmlPasswordInput) input);
+				passwordField = (HtmlPasswordInput) input;
 			}
 			else if(inputType.equals("submit"))
 			{
-				submitFields.add((HtmlSubmitInput) input);
+				submitField = (HtmlSubmitInput) input;
 			}
 		}
 	}
@@ -64,19 +64,19 @@ public class WebForm
 		return inputs;
 	}
 
-	public List<HtmlPasswordInput> getPasswordFields()
+	public HtmlPasswordInput getPasswordField()
 	{
-		return passwordFields;
+		return passwordField;
 	}
 
-	public List<HtmlSubmitInput> getSubmitFields()
+	public HtmlSubmitInput getSubmitField()
 	{
-		return submitFields;
+		return submitField;
 	}
 
 	public boolean requiresAuthentication()
 	{
-		return !passwordFields.isEmpty();
+		return passwordField != null;
 	}
 
 	public static List<WebForm> toWebForms(DomNodeList<DomElement> forms)

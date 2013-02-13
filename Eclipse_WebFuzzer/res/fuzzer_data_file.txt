@@ -63,6 +63,7 @@ admin
 sql
 mysql
 pass
+version
 nuclear_launch_codes
 
 password dictionary:

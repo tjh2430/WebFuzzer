@@ -16,8 +16,10 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
+import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.html.DomElement;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
+import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 
 /**
@@ -37,6 +39,11 @@ public class SiteInformationManager
 	private List<String> vectors, sensitiveData, passwordDictionary, 
 								sanitationInputs, pageGuesses;
 	
+	/*
+	 * Used for logging potential vulnerabilities found by the fuzzer.
+	 */
+	private StringBuilder vulnerabilityReport;
+	
 	/**
 	 * Private constructor for creating a SiteInformationManager for the site 
 	 * at the given URL.  
@@ -44,6 +51,7 @@ public class SiteInformationManager
 	private SiteInformationManager()
 	{
 		this.webPages = new HashMap<String, WebPage>();
+		this.vulnerabilityReport = new StringBuilder();
 	}
 	
 	/**
@@ -79,8 +87,9 @@ public class SiteInformationManager
 		
 		if(webPage.requiresAuthentication())
 		{
-			boolean authenticationSuccessful = false;
+			Page authenticationPage = null;
 
+			List<WebForm> authenticationForms = webPage.getFormsWithAuthentication();
 			String username = configurations.getUsername();
 			String password; 
 					
@@ -89,24 +98,35 @@ public class SiteInformationManager
 				password = null;
 				
 				// TODO: Account for whether full or random completeness is on
-				for(String word: passwordDictionary)
+				for(WebForm form: authenticationForms)
 				{
-					authenticationSuccessful = webPage.attemptAuthentication(username, word);
-					
-					if(authenticationSuccessful)
+					for(String word: passwordDictionary)
 					{
-						password = word;
-						break;
+						authenticationPage = webPage.attemptAuthentication(form, username, word);
+						
+						if(authenticationPage == null)
+						{
+							password = word;
+
+							// TODO: Record that this was a successful combination and
+							// keep track of all successful combinations
+						}
 					}
 				}
 			}
 			else
 			{
 				password = configurations.getPassword();
-				authenticationSuccessful = webPage.attemptAuthentication(username, password);
+				
+				for(WebForm form: authenticationForms)
+				{
+					authenticationPage = webPage.attemptAuthentication(form, username, password);
+					
+					// TODO: Record that this was a successful combination
+				}
 			}
 			
-			if(authenticationSuccessful)
+			if(authenticationPage == null)
 			{
 				// TODO: Figure out how to handle and log successfuly vs.
 				// unsuccessful authentication
@@ -179,6 +199,11 @@ public class SiteInformationManager
 		return webPages.get(url);
 	}
 
+	public void reconfigureRunAndReport(String configurationFileName)
+	{
+		// TODO: Implement as a one-shot method
+	}
+	
 	/**
 	 * Loads the configuration data contained in the configuration file with the given
 	 * file name.
@@ -354,8 +379,8 @@ public class SiteInformationManager
 			
 			for(WebForm form: page.getForms())
 			{
-				List<HtmlSubmitInput> submitFields = form.getSubmitFields();
-				if(submitFields.isEmpty())
+				HtmlSubmitInput submitField = form.getSubmitField();
+				if(submitField == null)
 				{
 					// If the form cannot be submitted then nothing can be done
 					// with this form
@@ -370,7 +395,7 @@ public class SiteInformationManager
 						//TODO: Bombard input! 
 						
 						// Submits the form
-						submitFields.get(0).click();
+						submitField.click();
 					}
 				}
 			}
@@ -390,25 +415,38 @@ public class SiteInformationManager
 			
 			for(WebForm form: page.getForms())
 			{
-				List<HtmlSubmitInput> submitFields = form.getSubmitFields();
-				if(submitFields.isEmpty())
+				HtmlSubmitInput submitField = form.getSubmitField();
+				if(submitField == null)
 				{
 					// If the form cannot be submitted then nothing can be done
 					// with this form
 					break;
 				}
 				
-				for(DomElement input: form.getInputs())
+				Page resultingPage;
+				for(HtmlElement input: form.getInputs())
 				{
 					for(String vector: vectors)
 					{
-						//TODO: Bombard input! 
-
+						input.type(vector);
+						
 						// Submits the form
-						submitFields.get(0).click();
+						resultingPage = submitField.click();
 					}
 					
 					// TODO: Run other inputs/checking (sensitive data, etc)
+					for(String inputToSanitize: sanitationInputs)
+					{
+						// Submit input and then check the url params to ensure
+						// that the input has been changed
+						input.type(inputToSanitize);
+						
+						// Submits the form
+						resultingPage = submitField.click();
+						
+						// TODO: Check to see if the input was sanitized (changed)
+						// at all
+					}
 				}
 			}
 		}
