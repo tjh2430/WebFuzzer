@@ -91,7 +91,11 @@ public class SiteInformationManager
 	{
 		return webPages.get(url);
 	}
-	
+
+	/**
+	 * Loads the configuration data contained in the configuration file with the given
+	 * file name.
+	 */
 	public void loadConfigurations(String configurationFileName)
 	{
 		// TODO: Implement (Eric)
@@ -170,10 +174,6 @@ public class SiteInformationManager
 	/**
 	 * Initializes and returns a new SiteInformationManager using the configurations contained in 
 	 * the configuration file with the given file name after performing attack surface discovery. 
-	 *  
-	 * @throws IOException 
-	 * @throws MalformedURLException 
-	 * @throws FailingHttpStatusCodeException 
 	 */
 	public static SiteInformationManager initSiteInformationManager(String configurationFileName)
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
