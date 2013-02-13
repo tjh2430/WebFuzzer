@@ -13,9 +13,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
+import com.gargoylesoftware.htmlunit.html.DomElement;
+import com.gargoylesoftware.htmlunit.html.DomNodeList;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
+import com.gargoylesoftware.htmlunit.html.HtmlElement;
 
 /**
  * Provides a consolidated interface for accessing and managing vulnerability
@@ -30,7 +34,9 @@ public class SiteInformationManager
 {
 	private String baseUrl;
 	private Map<String, WebPage> webPages;
-	private FuzzerData configurations;
+	public FuzzerData configurations;
+	private List<String> vectors, sensitiveData, passwordDictionary, 
+								sanitationInputs, pageGuesses;
 	
 	/**
 	 * Private constructor for creating a SiteInformationManager for the site 
@@ -98,25 +104,67 @@ public class SiteInformationManager
 	 */
 	public void loadConfigurations(String configurationFileName)
 	{
-		// TODO: Implement (Eric)
-	}
-	
-	// Check for lack of sanitization (different from fuzz vectors??)
-	// Run external list of fuzz vectors
-	public void runFuzzVectors(String fuzzVectorFileName)
-	{
-		List<String> vectors = new ArrayList<String>();
+		configurations = new FuzzerData();
 		
 		FileInputStream fstream;
 		try 
 		{
-			fstream = new FileInputStream(fuzzVectorFileName);
+			fstream = new FileInputStream(configurationFileName);
 			DataInputStream in = new DataInputStream(fstream);
 			BufferedReader br = new BufferedReader(new InputStreamReader(in));
-			String line;
+			
+			StringTokenizer tokenizer;
+			String line, nextToken;
 			
 			while((line = br.readLine()) != null){
-				vectors.add(line);
+				tokenizer = new StringTokenizer(line);
+				
+				nextToken = tokenizer.nextToken();
+				
+				if(nextToken.equals("app_data_file:"))
+				{
+					configurations.setDataFileName(tokenizer.nextToken());
+				}
+				else if(nextToken.equals("username:"))
+				{
+					configurations.setUsername(tokenizer.nextToken().replaceAll(" ", "\0"));
+				}
+				else if(nextToken.equals("password:"))
+				{
+					configurations.setPassword(tokenizer.nextToken().replaceAll(" ", "\0"));
+				}
+				else if(nextToken.equals("password_guessing:"))
+				{
+					String guessing = tokenizer.nextToken();
+					if((guessing.equalsIgnoreCase("on")))
+					{
+						configurations.setPasswordGuessing(true);
+					}
+					else if((guessing.equalsIgnoreCase("off")))
+					{
+						configurations.setPasswordGuessing(false);
+					}
+				}
+				else if(nextToken.equals("site_url:"))
+				{
+					baseUrl = tokenizer.nextToken();
+				}
+				else if(nextToken.equals("time_gap:"))
+				{
+					configurations.setTimeGap(Integer.parseInt(tokenizer.nextToken()));
+				}
+				else if(nextToken.equals("completeness:"))
+				{
+					String complete = tokenizer.nextToken();
+					if((complete.equalsIgnoreCase("full")))
+					{
+						configurations.setCompleteness(true);
+					}
+					else if((complete.equalsIgnoreCase("random")))
+					{
+						configurations.setCompleteness(false);
+					}
+				}
 			}
 			
 			br.close();
@@ -124,7 +172,7 @@ public class SiteInformationManager
 		} 
 		catch (FileNotFoundException e) 
 		{
-			System.out.println("Fuzz Vector File Not Found");
+			System.out.println("Configuration File Not Found");
 			e.printStackTrace();
 			return;
 		}
@@ -134,13 +182,109 @@ public class SiteInformationManager
 			return;
 		}
 		
-		//for(/*TODO: Iterate through inputs*/)
-		//{
-			for(String vector: vectors)
-			{
-				//TODO: Bombard input! 
+		if(!configurations.getDataFileName().isEmpty())
+		{
+			loadData();
+		}
+	}
+	
+	/**
+	 * Loads all the data from the data file into respective data structures.
+	 */
+	public void loadData()
+	{
+		vectors = new ArrayList<String>();
+		sensitiveData = new ArrayList<String>();
+		passwordDictionary = new ArrayList<String>();
+		sanitationInputs = new ArrayList<String>();
+		pageGuesses = new ArrayList<String>();
+		
+		FileInputStream fstream;
+		try 
+		{
+			fstream = new FileInputStream(configurations.getDataFileName());
+			DataInputStream in = new DataInputStream(fstream);
+			BufferedReader br = new BufferedReader(new InputStreamReader(in));
+			String line;
+			
+			while((line = br.readLine()) != null){
+				if(line.equals("external fuzz vectors:"))
+				{
+					while((line = br.readLine()) != null)
+					{
+						vectors.add(line);
+					}
+				}
+				else if(line.equals("sensitive data:"))
+				{
+					while((line = br.readLine()) != null)
+					{
+						sensitiveData.add(line);
+					}
+				}
+				else if(line.equals("password dictionary:"))
+				{
+					while((line = br.readLine()) != null)
+					{
+						passwordDictionary.add(line);
+					}
+				}
+				else if(line.equals("sanitization checking inputs:"))
+				{
+					while((line = br.readLine()) != null)
+					{
+						sanitationInputs.add(line);
+					}
+				}
+				else if(line.equals("page guessing:"))
+				{
+					while((line = br.readLine()) != null)
+					{
+						pageGuesses.add(line);
+					}
+				}
 			}
-		//}
+			
+			br.close();
+			
+		} 
+		catch (FileNotFoundException e) 
+		{
+			System.out.println("Data File Not Found");
+			e.printStackTrace();
+			return;
+		}
+		catch (IOException e) 
+		{
+			e.printStackTrace();
+			return;
+		}
+	}
+	
+	// Check for lack of sanitization (different from fuzz vectors??)
+	// Run external list of fuzz vectors
+	public void runFuzzVectors()
+	{
+		
+		for(String pageName: webPages.keySet())
+		{
+			WebPage page = webPages.get(pageName);
+			
+			for(DomElement form: page.getForms())
+			{
+				
+				for(DomElement input:form.getElementsByTagName("input"))
+				{
+					//TODO: Get submit element
+					
+					for(String vector: vectors)
+					{
+						//TODO: Bombard input! 
+					}
+				}
+				
+			}
+		}
 	}
 	
 	public void performFuzzing()
