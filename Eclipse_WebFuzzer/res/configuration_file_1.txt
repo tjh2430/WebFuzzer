@@ -1,0 +1,7 @@
+app data file: fuzzer_data_file.txt
+username: user
+password: password
+password guessing: off
+site url: "http://127.0.0.1:8080/stupid_authentication/"
+time gap: 0
+completeness: full

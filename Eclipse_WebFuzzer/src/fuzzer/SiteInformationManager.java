@@ -36,14 +36,15 @@ public class SiteInformationManager
 	 * Private constructor for creating a SiteInformationManager for the site 
 	 * at the given URL.  
 	 */
-	private SiteInformationManager(String url, FuzzerData configurationData)
+	private SiteInformationManager()
 	{
-		// TODO: Add any necessary error/exception checking (such as
-		// for illegal/invalid URLs)
-		this.baseUrl = getBaseUrl(url);
 		this.webPages = new HashMap<String, WebPage>();
-		
-		// TODO: Make use of the configurationData parameter
+	}
+	
+	public void performDiscovery() 
+		throws FailingHttpStatusCodeException, MalformedURLException, IOException
+	{
+		performDiscoveryOnSite(baseUrl);
 	}
 	
 	/**
@@ -51,14 +52,13 @@ public class SiteInformationManager
 	 * pages within the site (i.e. start with the same base URL) which are 
 	 * linked to from that page's URL.
 	 */
-	public void performDiscoveryOnSite(String baseUrl)
+	private void performDiscoveryOnSite(String baseUrl)
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
 		performDiscoveryOnUrl(baseUrl, baseUrl);
 	}
 	
-	// TODO: Add comment
-	public void performDiscoveryOnUrl(String baseUrl, String pageUrl) 
+	private void performDiscoveryOnUrl(String baseUrl, String pageUrl) 
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
 		WebPage webPage = WebPage.performDiscoveryOnPage(pageUrl);
@@ -92,12 +92,9 @@ public class SiteInformationManager
 		return webPages.get(url);
 	}
 	
-	// Specify time gap (what exactly does this mean?)
-	// Specify completeness option
-	// Turn password guesses on or off??
-	public void configure(FuzzerData configurationData)
+	public void loadConfigurations(String configurationFileName)
 	{
-		this.configurations = configurationData;
+		// TODO: Implement (Eric)
 	}
 	
 	// Check for lack of sanitization (different from fuzz vectors??)
@@ -142,22 +139,9 @@ public class SiteInformationManager
 		//}
 	}
 	
-	// TODO: Implement checks on all responses received
-	// Sensitive data??? ("mysql", stack-traces, raw exceptions, etc.)
-	//
-	
-	// Password authentication
-	// -> Allow user to specify a username and password as well as which
-	//    input fields they should be sent to
-	/**
-	 * 
-	 * @param webPage
-	 * @param formId
-	 * @param inputIdsToValues	A mapping of input tag ids to the input values to put into them
-	 */
-	public void submitInputs(WebPage webPage, String formId, Map<String, String> inputIdsToValues)
+	public void performFuzzing()
 	{
-		// TODO: Implement
+		// TODO: Implement (Tim)
 	}
 	
 	/**
@@ -182,17 +166,24 @@ public class SiteInformationManager
 		
 		outputStream.println("------------------------------------------------------------------------------");
 	}
-	
-	// TODO: Add comment
-	public static SiteInformationManager discoverAttackSurface(String baseUrl, FuzzerData configurationData) 
+
+	/**
+	 * Initializes and returns a new SiteInformationManager using the configurations contained in 
+	 * the configuration file with the given file name after performing attack surface discovery. 
+	 *  
+	 * @throws IOException 
+	 * @throws MalformedURLException 
+	 * @throws FailingHttpStatusCodeException 
+	 */
+	public static SiteInformationManager initSiteInformationManager(String configurationFileName)
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
-		SiteInformationManager informationManager = new SiteInformationManager(baseUrl, configurationData);
-		informationManager.performDiscoveryOnSite(baseUrl);		
-		
+		SiteInformationManager informationManager = new SiteInformationManager();
+		informationManager.loadConfigurations(configurationFileName);
+		informationManager.performDiscovery();
 		return informationManager;
 	}
-
+	
 	// TODO: Remove this method from the WebFuzzer class (they are exact
 	// copies of each other, and since its static it only needs to be in
 	// one place anyways)

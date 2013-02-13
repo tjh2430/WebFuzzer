@@ -2,7 +2,7 @@
 <html>
 <body>
 
-<form name="stupid_form" onsubmit="validateForm()">
+<form name="stupid_form" action="http://127.0.0.1:8080/stupid_authentication/authenticated.html" onsubmit="return validateForm()" href="http://127.0.0.1:8080/stupid_authentication/authenticated.html">
 Username: <input type="text" name="user"><br>
 Password: <input type="password" name="password"><br>
 <input type="submit" value="Submit">
@@ -19,12 +19,11 @@ var x=document.forms["stupid_form"]["user"].value;
 var y=document.forms["stupid_form"]["password"].value;
 if (x!="user" || y!="password")
   {
-  alert("Not authenticated. Username must be \"user\" and password must be \"password\"");
   return false;
   }
 else
   {
-  alert("Congratulations! You just authenticated into one of the most insecure forms ever!")
+  alert("Hi");
   return true;
   }
 }

