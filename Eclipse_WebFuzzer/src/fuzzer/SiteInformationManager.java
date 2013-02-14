@@ -251,6 +251,10 @@ public class SiteInformationManager
 						configurations.setPasswordGuessing(false);
 					}
 				}
+				else if(nextToken.equals("authentication_success_string:"))
+				{
+					configurations.setAuthenticationSuccessString(tokenizer.nextToken());
+				}
 				else if(nextToken.equals("site_url:"))
 				{
 					baseUrl = tokenizer.nextToken();

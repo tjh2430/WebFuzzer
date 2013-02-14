@@ -14,7 +14,7 @@ public class FuzzerData {
 	private boolean SEARCH_COMPLETE = true;
 	private boolean passwordGuessing = false;
 	private int TIME_GAP = 0;
-	private String username, password, dataFileName; 
+	private String username, password, dataFileName, authenticationSuccessString; 
 	
 	public FuzzerData(){
 		
@@ -83,5 +83,14 @@ public class FuzzerData {
 
 	public void setPasswordGuessing(boolean passwordGuessing) {
 		this.passwordGuessing = passwordGuessing;
+	}
+
+	public String getAuthenticationSuccessString() {
+		return authenticationSuccessString;
+	}
+
+	public void setAuthenticationSuccessString(
+			String authenticationSuccessString) {
+		this.authenticationSuccessString = authenticationSuccessString;
 	}
 }
