@@ -62,6 +62,34 @@ public class WebPage
 			}
 		}
 	}
+	
+	/**
+	 * Public constructor for creating a WebPage from an HtmlPage.
+	 */
+	public WebPage(HtmlPage page) 
+		throws FailingHttpStatusCodeException, MalformedURLException, IOException
+	{
+		this.client = new WebClient();
+		this.cookieMgmt = client.getCookieManager();
+		this.page = page;
+		this.url = page.getUrl();
+		
+		this.webForms = WebForm.toWebForms(page.getElementsByTagName("form"));
+		this.formsWithAuthentication = new ArrayList<WebForm>();
+		
+		// Authentication is considered to be required if any form on this web 
+		// page contains at least one password input field.
+		this.authenticationRequired = false;
+		
+		for(WebForm form: webForms)
+		{
+			if(form.requiresAuthentication())
+			{
+				this.authenticationRequired = true;
+				formsWithAuthentication.add(form);
+			}
+		}
+	}
 
 	public WebClient getClient()
 	{

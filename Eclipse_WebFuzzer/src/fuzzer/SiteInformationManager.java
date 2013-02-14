@@ -20,6 +20,7 @@ import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.html.DomElement;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 
 /**
@@ -39,6 +40,8 @@ public class SiteInformationManager
 	private List<String> vectors, sensitiveData, passwordDictionary, 
 								sanitationInputs, pageGuesses;
 	
+	// TODO: Append reports of potential vulnerabilities at all steps of fuzzing
+	// and discovery
 	/*
 	 * Used for logging potential vulnerabilities found by the fuzzer.
 	 */
@@ -79,15 +82,19 @@ public class SiteInformationManager
 		performPageGuessing();
 	}
 	
+	// TODO: Remove the baseUrl parameter given that this method is not static 
+	// and therefore this method can directly access the baseUrl field
 	private void performDiscoveryOnUrl(String baseUrl, String pageUrl) 
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
 		WebPage webPage = WebPage.performDiscoveryOnPage(pageUrl);
 		webPages.put(pageUrl, webPage);
 		
-		if(webPage.requiresAuthentication())
+		// TODO: Check if the username will be null or simply empty if no username
+		// is provided in the configurations
+		if(webPage.requiresAuthentication() && configurations.getUsername() != null)
 		{
-			Page authenticationPage = null;
+			HtmlPage authenticationPage = null;
 
 			List<WebForm> authenticationForms = webPage.getFormsWithAuthentication();
 			String username = configurations.getUsername();
@@ -102,15 +109,9 @@ public class SiteInformationManager
 				{
 					for(String word: passwordDictionary)
 					{
-						authenticationPage = webPage.attemptAuthentication(form, username, word);
-						
-						if(authenticationPage == null)
-						{
-							password = word;
-
-							// TODO: Record that this was a successful combination and
-							// keep track of all successful combinations
-						}
+						// TODO: Make sure that this cast won't cause problems
+						authenticationPage = (HtmlPage) webPage.attemptAuthentication(form, username, word);
+						checkAuthenticationPage(authenticationPage, username, word);
 					}
 				}
 			}
@@ -120,20 +121,9 @@ public class SiteInformationManager
 				
 				for(WebForm form: authenticationForms)
 				{
-					authenticationPage = webPage.attemptAuthentication(form, username, password);
-					
-					// TODO: Record that this was a successful combination
+					authenticationPage = (HtmlPage) webPage.attemptAuthentication(form, username, password);
+					checkAuthenticationPage(authenticationPage, username, password);
 				}
-			}
-			
-			if(authenticationPage == null)
-			{
-				// TODO: Figure out how to handle and log successfuly vs.
-				// unsuccessful authentication
-			}
-			else
-			{
-				
 			}
 		}
 		
@@ -150,6 +140,43 @@ public class SiteInformationManager
 			}
 						
 			performDiscoveryOnUrl(baseUrl, linkUrl);			
+		}
+	}
+	
+	private void checkAuthenticationPage(HtmlPage authenticationPage, String username, String password)
+		throws FailingHttpStatusCodeException, MalformedURLException, IOException
+	{
+		if(authenticationPage != null)
+		{
+			// TODO: Record that this was a successful combination
+			
+			String authenticationPageUrl = authenticationPage.getUrl().toString();
+			if(!webPages.containsKey(authenticationPageUrl))
+			{
+				WebPage discoveredPage = new WebPage(authenticationPage);
+				webPages.put(authenticationPageUrl, discoveredPage);
+				
+				// Since the page reached after performing authentication has not
+				// already been encountered, perform discovery from the page 
+				List<HtmlAnchor> links = discoveredPage.getPage().getAnchors(); 
+				for(HtmlAnchor link: links)
+				{
+					String linkUrl = discoveredPage.getPage().getFullyQualifiedUrl(link.getHrefAttribute()).toString();
+
+					// If the page URL is not a part of the site being fuzzed of if this 
+					// page URL has already been discovered then nothing needs to be done
+					if(webPages.containsKey(linkUrl) || !linkUrl.startsWith(baseUrl))
+					{
+						continue;
+					}
+								
+					performDiscoveryOnUrl(baseUrl, linkUrl);			
+				}
+			}
+		}
+		else
+		{
+			// TODO: Record that this was not a successful combination
 		}
 	}
 	
@@ -200,8 +227,11 @@ public class SiteInformationManager
 	}
 
 	public void reconfigureRunAndReport(String configurationFileName)
+		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
-		// TODO: Implement as a one-shot method
+		loadConfigurations(configurationFileName);
+		performDiscovery();
+		performFuzzing();
 	}
 	
 	/**
@@ -489,6 +519,21 @@ public class SiteInformationManager
 		SiteInformationManager informationManager = new SiteInformationManager();
 		informationManager.loadConfigurations(configurationFileName);
 		informationManager.performDiscovery();
+		return informationManager;
+	}
+	
+	/**
+	 * Initializes and returns a new SiteInformationManager using the configurations contained in 
+	 * the configuration file with the given file name after performing attack surface discovery
+	 * and then fuzzing the discovered attack surface using the loaded configurations. 
+	 */
+	public static SiteInformationManager loadConfigurationAndFuzz(String configurationFileName)
+		throws FailingHttpStatusCodeException, MalformedURLException, IOException
+	{
+		SiteInformationManager informationManager = new SiteInformationManager();
+		informationManager.loadConfigurations(configurationFileName);
+		informationManager.performDiscovery();
+		informationManager.performFuzzing();
 		return informationManager;
 	}
 	

@@ -1,11 +1,11 @@
-/**
- * 
- */
 package fuzzer;
 
 /**
- * @author Ross
- *
+ * POJO (plain old Java object) representation of fuzzer application settings. 
+ * 
+ * @author Eric Newman (edn6266)
+ * @author Ross Kahn (rtk1865) 
+ * @author Timothy Heard (tjh2430)
  */
 public class FuzzerData {
 	
