@@ -132,6 +132,12 @@ public class WebPage
 		// an authentication attempt was successful as well as how to get to the
 		// authenticated version of the page/ the page past the login page 
 		// programatically
+		
+		// Submit the username and password to the WebForm's username and password
+		// fields (if they exist) and then submit the form (?-> can forms be submited
+		// by calling click() on the form itself? if so is this the same as calling
+		// click() on the submit field?)
+		
 		return null;
 	}
 	

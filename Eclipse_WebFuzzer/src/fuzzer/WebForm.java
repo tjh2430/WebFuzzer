@@ -9,6 +9,7 @@ import java.util.List;
 import com.gargoylesoftware.htmlunit.html.DomElement;
 import com.gargoylesoftware.htmlunit.html.DomNodeList;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
+import com.gargoylesoftware.htmlunit.html.HtmlInput;
 import com.gargoylesoftware.htmlunit.html.HtmlPasswordInput;
 import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 
@@ -25,6 +26,8 @@ public class WebForm
 	private DomElement form;
 	private DomNodeList<HtmlElement> inputs;
 	private HtmlSubmitInput submitField;
+	private HtmlElement usernameField;
+
 	private HtmlPasswordInput passwordField;
 	
 	public WebForm(DomElement form)
@@ -32,6 +35,7 @@ public class WebForm
 		this.form = form;
 		this.inputs = form.getElementsByTagName("input");
 		this.submitField = null;
+		this.usernameField = null;
 		this.passwordField = null;
 		
 		for(HtmlElement input: inputs)
@@ -51,6 +55,12 @@ public class WebForm
 			{
 				submitField = (HtmlSubmitInput) input;
 			}
+			else if(input.getId() != null && input.getId().contains("user"))
+			{
+				// TODO: Check is "contains("user") is the appropriate way to do this
+				// (i.e. will it work?)
+				usernameField = input;
+			}
 		}
 	}
 	
@@ -64,6 +74,11 @@ public class WebForm
 		return inputs;
 	}
 
+	public HtmlElement getUsernameField()
+	{
+		return usernameField;
+	}
+	
 	public HtmlPasswordInput getPasswordField()
 	{
 		return passwordField;

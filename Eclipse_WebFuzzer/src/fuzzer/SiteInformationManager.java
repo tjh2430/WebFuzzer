@@ -7,7 +7,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,7 +19,6 @@ import java.util.StringTokenizer;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.Page;
-import com.gargoylesoftware.htmlunit.html.DomElement;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
@@ -37,6 +38,8 @@ public class SiteInformationManager
 	private String baseUrl;
 	private Map<String, WebPage> webPages;
 	public FuzzerData configurations;
+	
+	// TODO: Add sensitive data checks
 	private List<String> vectors, sensitiveData, passwordDictionary, 
 								sanitationInputs, pageGuesses;
 	
@@ -111,7 +114,7 @@ public class SiteInformationManager
 					{
 						// TODO: Make sure that this cast won't cause problems
 						authenticationPage = (HtmlPage) webPage.attemptAuthentication(form, username, word);
-						checkAuthenticationPage(authenticationPage, username, word);
+						checkAuthenticationPage(authenticationPage, pageUrl, username, word);
 					}
 				}
 			}
@@ -122,11 +125,25 @@ public class SiteInformationManager
 				for(WebForm form: authenticationForms)
 				{
 					authenticationPage = (HtmlPage) webPage.attemptAuthentication(form, username, password);
-					checkAuthenticationPage(authenticationPage, username, password);
+					checkAuthenticationPage(authenticationPage, pageUrl, username, password);
 				}
 			}
 		}
 		
+		performDiscoveryOnLinks(webPage, false);
+	}
+	
+	/**
+	 * Performs attack surface discovery on all the pages that are linked to from 
+	 * the given web page which are a part of the same web site (i.e. start with the
+	 * same base URL). If a value of true is passed into the logNewLinks parameter
+	 * then any links which are found on this page which have not already been 
+	 * encountered will be logged (this is used when following links from a unlinked
+	 * page discovered through page guessing).   
+	 */
+	private void performDiscoveryOnLinks(WebPage webPage, boolean logNewLinks)
+		throws FailingHttpStatusCodeException, IOException
+	{
 		List<HtmlAnchor> links = webPage.getPage().getAnchors(); 
 		for(HtmlAnchor link: links)
 		{
@@ -139,16 +156,24 @@ public class SiteInformationManager
 				continue;
 			}
 						
+			if(logNewLinks)
+			{
+				vulnerabilityReport.append("New link found: " + linkUrl + "\n\n");
+			}
+			
 			performDiscoveryOnUrl(baseUrl, linkUrl);			
 		}
 	}
 	
-	private void checkAuthenticationPage(HtmlPage authenticationPage, String username, String password)
+	private void checkAuthenticationPage(HtmlPage authenticationPage, String pageUrl, String username, String password)
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
-		if(authenticationPage != null)
+		if(authenticationPage != null)// && --TODO: add check for authentication success string here--)
 		{
-			// TODO: Record that this was a successful combination
+			// Records that this was a successful combination
+			vulnerabilityReport.append("On page at " + pageUrl +
+					": successfully authenticated with username \"" + username + 
+					"\" and password \"" + password + "\"\n\n");
 			
 			String authenticationPageUrl = authenticationPage.getUrl().toString();
 			if(!webPages.containsKey(authenticationPageUrl))
@@ -176,11 +201,15 @@ public class SiteInformationManager
 		}
 		else
 		{
-			// TODO: Record that this was not a successful combination
+			// Records that this was not a successful combination
+			vulnerabilityReport.append("On page at " + pageUrl +
+					": unable to authenticate with username \"" + username + 
+					"\" and password \"" + password + "\"\n\n");
 		}
 	}
 	
 	private void performPageGuessing()
+		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
 		for(String pageGuess: pageGuesses)
 		{
@@ -202,12 +231,20 @@ public class SiteInformationManager
 				continue;
 			}
 			
-			// TODO: Check if the current guess URL is actually a valid URL
-			// and if so, log the fact that an unlinked page was discovered for the
-			// site and then perform discovery (i.e. follow links) for this page,
-			// logging any pages which can only be reached from this unlinked page
-			// (i.e. any previously undiscovered pages which are found by following
-			// links on the newly found page if possible).
+			// Checks to see if the current guess URL is actually a valid URL
+			// and if so, the fact that an unlinked page was discovered for the
+			// site is logged and then discovery is performed from this page 
+			// (i.e. any links on the page are followed), logging any pages which can 
+			// only be reached from this unlinked page (i.e. any previously 
+			// undiscovered pages which are found by following links on the newly 
+			// found page).
+			if(urlExists(linkUrl))
+			{
+				vulnerabilityReport.append("Page guessing found an unlinked page at " +	linkUrl);
+				
+				WebPage webPage = WebPage.performDiscoveryOnPage(linkUrl);
+				performDiscoveryOnLinks(webPage, true);
+			}
 		}
 	}
 	
@@ -401,41 +438,6 @@ public class SiteInformationManager
 		}
 	}
 	
-	// Check for lack of sanitization (different from fuzz vectors??)
-	// Run external list of fuzz vectors
-	public void runFuzzVectors()
-		throws IOException
-	{
-		
-		for(String pageName: webPages.keySet())
-		{
-			WebPage page = webPages.get(pageName);
-			
-			for(WebForm form: page.getForms())
-			{
-				HtmlSubmitInput submitField = form.getSubmitField();
-				if(submitField == null)
-				{
-					// If the form cannot be submitted then nothing can be done
-					// with this form
-					break;
-				}
-				
-				for(DomElement input: form.getInputs())
-				{
-					
-					for(String vector: vectors)
-					{
-						//TODO: Bombard input! 
-						
-						// Submits the form
-						submitField.click();
-					}
-				}
-			}
-		}
-	}
-	
 	/**
 	 * Performs fuzz testing on the currently discovered attack surface using 
 	 * the currently loaded configurations and logs the results.
@@ -466,9 +468,13 @@ public class SiteInformationManager
 						
 						// Submits the form
 						resultingPage = submitField.click();
+						
+						// TODO: Figure out how to verify whether or not there is a 
+						// potential vulnerability
+						
+						// vulnerabilityReport.append("");
 					}
 					
-					// TODO: Run other inputs/checking (sensitive data, etc)
 					for(String inputToSanitize: sanitationInputs)
 					{
 						// Submit input and then check the url params to ensure
@@ -480,6 +486,8 @@ public class SiteInformationManager
 						
 						// TODO: Check to see if the input was sanitized (changed)
 						// at all
+						
+						// vulnerabilityReport.append("");
 					}
 				}
 			}
@@ -494,7 +502,7 @@ public class SiteInformationManager
 	 */
 	public void writeReport(PrintStream outputStream)
 	{
-		// TODO: Add report header
+		// TODO: Add report header and the vulnerabilityReport contents
 		outputStream.println("------------------------------------------------------------------------------");
 		outputStream.println("Report for site based at " + baseUrl + "\n");
 		
@@ -569,5 +577,26 @@ public class SiteInformationManager
 		}
 		
 		return url.substring(0, baseUrlEnd);
+	}
+	
+	/**
+	 * Method for checking whether or not a given URL exists on the web.
+	 * Taken from a response on stackoverflow 
+	 * (http://stackoverflow.com/questions/4177864/checking-a-url-exist-or-not) 
+	 */
+	public static boolean urlExists(String url)
+	{
+	    try {
+	      HttpURLConnection.setFollowRedirects(false);
+	      // note : you may also need
+	      //        HttpURLConnection.setInstanceFollowRedirects(false)
+	      HttpURLConnection con =
+	         (HttpURLConnection) new URL(url).openConnection();
+	      con.setRequestMethod("HEAD");
+	      return (con.getResponseCode() == HttpURLConnection.HTTP_OK);
+	    }
+	    catch (Exception e) {
+	       return false;
+	    }
 	}
 }
