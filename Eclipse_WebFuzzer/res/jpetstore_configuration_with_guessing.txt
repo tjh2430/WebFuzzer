@@ -5,4 +5,4 @@ password_guessing: on
 authentication_success_string: Sign Out
 site_url: http://127.0.0.1:8080/bodgeit/
 time_gap: 0
-completeness: full
+completeness: 100
