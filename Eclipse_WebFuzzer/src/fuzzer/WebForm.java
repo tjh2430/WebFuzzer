@@ -3,9 +3,11 @@
  */
 package fuzzer;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.html.DomElement;
 import com.gargoylesoftware.htmlunit.html.DomNodeList;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
@@ -26,8 +28,7 @@ public class WebForm
 	private DomElement form;
 	private DomNodeList<HtmlElement> inputs;
 	private HtmlSubmitInput submitField;
-	private HtmlElement usernameField;
-
+	private HtmlInput usernameField;
 	private HtmlPasswordInput passwordField;
 	
 	public WebForm(DomElement form)
@@ -59,7 +60,7 @@ public class WebForm
 			{
 				// TODO: Check is "contains("user") is the appropriate way to do this
 				// (i.e. will it work?)
-				usernameField = input;
+				usernameField = (HtmlInput) input;
 			}
 		}
 	}
@@ -74,7 +75,7 @@ public class WebForm
 		return inputs;
 	}
 
-	public HtmlElement getUsernameField()
+	public HtmlInput getUsernameField()
 	{
 		return usernameField;
 	}
@@ -94,6 +95,19 @@ public class WebForm
 		return passwordField != null;
 	}
 
+	public Page submitAuthentication(String username, String password)
+		throws IOException
+	{
+		if(usernameField != null && passwordField != null && submitField != null)
+		{
+			usernameField.setValueAttribute(username);
+			passwordField.setValueAttribute(password);
+			return submitField.click();
+		}
+		
+		return null;
+	}
+	
 	public static List<WebForm> toWebForms(DomNodeList<DomElement> forms)
 	{
 		List<WebForm> webForms = new ArrayList<WebForm>();

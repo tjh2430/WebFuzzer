@@ -43,8 +43,6 @@ public class SiteInformationManager
 	private List<String> vectors, sensitiveData, passwordDictionary, 
 								sanitationInputs, pageGuesses;
 	
-	// TODO: Append reports of potential vulnerabilities at all steps of fuzzing
-	// and discovery
 	/*
 	 * Used for logging potential vulnerabilities found by the fuzzer.
 	 */
@@ -81,26 +79,26 @@ public class SiteInformationManager
 		// page discovery has been performed because otherwise the page guessing
 		// method may inaccurately report that there are no links to a page when
 		// in fact links do exist, they just haven't been explored yet.
-		performDiscoveryOnUrl(baseUrl, baseUrl);
+		performDiscoveryOnUrl(baseUrl);
 		performPageGuessing();
 	}
-	
-	// TODO: Remove the baseUrl parameter given that this method is not static 
-	// and therefore this method can directly access the baseUrl field
-	private void performDiscoveryOnUrl(String baseUrl, String pageUrl) 
+
+	/**
+	 * Attempts to enumerate the attack surface for the web page at the given URL. 
+	 */
+	private void performDiscoveryOnUrl(String pageUrl) 
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
 		WebPage webPage = WebPage.performDiscoveryOnPage(pageUrl);
 		webPages.put(pageUrl, webPage);
 		
-		// TODO: Check if the username will be null or simply empty if no username
-		// is provided in the configurations
-		if(webPage.requiresAuthentication() && configurations.getUsername() != null)
+		// TODO: Make sure that this check on the username works properly
+		String username = configurations.getUsername();
+		if(webPage.requiresAuthentication() && username != null && username.trim().length() > 0)
 		{
 			HtmlPage authenticationPage = null;
 
 			List<WebForm> authenticationForms = webPage.getFormsWithAuthentication();
-			String username = configurations.getUsername();
 			String password; 
 					
 			if(configurations.passwordGuessingIsOn())
@@ -161,7 +159,7 @@ public class SiteInformationManager
 				vulnerabilityReport.append("New link found: " + linkUrl + "\n\n");
 			}
 			
-			performDiscoveryOnUrl(baseUrl, linkUrl);			
+			performDiscoveryOnUrl(linkUrl);			
 		}
 	}
 	
@@ -170,10 +168,16 @@ public class SiteInformationManager
 	{
 		if(authenticationPage != null)// && --TODO: add check for authentication success string here--)
 		{
+			// TODO: Remove
+			System.out.println("***********************************************************");
+			System.out.println("Authentication response from " + pageUrl + ": " + authenticationPage.getWebResponse().getContentAsString());
+			System.out.println("***********************************************************");
+			//
+			
 			// Records that this was a successful combination
-			vulnerabilityReport.append("On page at " + pageUrl +
-					": successfully authenticated with username \"" + username + 
-					"\" and password \"" + password + "\"\n\n");
+			vulnerabilityReport.append("Successful authentication with username \"" + 
+					username + "\" and password \"" + password + "\" on page at " + 
+					pageUrl + "\n\n");
 			
 			String authenticationPageUrl = authenticationPage.getUrl().toString();
 			if(!webPages.containsKey(authenticationPageUrl))
@@ -195,16 +199,16 @@ public class SiteInformationManager
 						continue;
 					}
 								
-					performDiscoveryOnUrl(baseUrl, linkUrl);			
+					performDiscoveryOnUrl(linkUrl);			
 				}
 			}
 		}
 		else
 		{
 			// Records that this was not a successful combination
-			vulnerabilityReport.append("On page at " + pageUrl +
-					": unable to authenticate with username \"" + username + 
-					"\" and password \"" + password + "\"\n\n");
+			vulnerabilityReport.append("Unable to authenticate with username \"" + 
+				username + "\" and password \"" + password + "\" on page at " + 
+				pageUrl + "\n\n");
 		}
 	}
 	
@@ -263,19 +267,31 @@ public class SiteInformationManager
 		return webPages.get(url);
 	}
 
-	public void reconfigureRunAndReport(String configurationFileName)
-		throws FailingHttpStatusCodeException, MalformedURLException, IOException
+	public boolean reconfigureAndFuzz(String configurationFileName)
 	{
-		loadConfigurations(configurationFileName);
-		performDiscovery();
-		performFuzzing();
+		try
+		{
+			if(loadConfigurations(configurationFileName))
+			{
+				performDiscovery();
+				performFuzzing();
+				return true;
+			}
+		} 
+		catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return false;
 	}
 	
 	/**
 	 * Loads the configuration data contained in the configuration file with the given
 	 * file name.
 	 */
-	public void loadConfigurations(String configurationFileName)
+	public boolean loadConfigurations(String configurationFileName)
 	{
 		configurations = new FuzzerData();
 		
@@ -325,6 +341,11 @@ public class SiteInformationManager
 				else if(nextToken.equals("site_url:"))
 				{
 					baseUrl = tokenizer.nextToken();
+					
+					if(baseUrl == null || !urlExists(baseUrl))
+					{
+						return false;
+					}
 				}
 				else if(nextToken.equals("time_gap:"))
 				{
@@ -345,30 +366,43 @@ public class SiteInformationManager
 			}
 			
 			br.close();
-			
 		} 
 		catch (FileNotFoundException e) 
 		{
 			System.out.println("Configuration File Not Found");
 			e.printStackTrace();
-			return;
+			return false;
 		}
 		catch (IOException e) 
 		{
 			e.printStackTrace();
-			return;
+			return false;
+		}
+
+		// TODO: Remove
+		System.out.println("\nLoaded Configurations:\n");
+		System.out.println("Seach Complete: " + configurations.completeness());
+		System.out.println("Time Gap: " + configurations.timeGap());
+		System.out.println("Username: " + configurations.getUsername());
+		System.out.println("Password: " + configurations.getPassword());
+		System.out.println("Password Guessing Is On: " + configurations.passwordGuessingIsOn());
+		System.out.println("Data File Name: " + configurations.getDataFileName());
+		System.out.println("Authentication Success String: " + configurations.getAuthenticationSuccessString());
+		//
+		
+		if(configurations.getDataFileName() != null && 
+		   !configurations.getDataFileName().isEmpty())
+		{
+			return loadData();
 		}
 		
-		if(!configurations.getDataFileName().isEmpty())
-		{
-			loadData();
-		}
+		return false;
 	}
 	
 	/**
 	 * Loads all the data from the data file into respective data structures.
 	 */
-	public void loadData()
+	public boolean loadData()
 	{
 		vectors = new ArrayList<String>();
 		sensitiveData = new ArrayList<String>();
@@ -429,13 +463,15 @@ public class SiteInformationManager
 		{
 			System.out.println("Data File Not Found");
 			e.printStackTrace();
-			return;
+			return false;
 		}
 		catch (IOException e) 
 		{
 			e.printStackTrace();
-			return;
+			return false;
 		}
+		
+		return true;
 	}
 	
 	/**
@@ -502,19 +538,24 @@ public class SiteInformationManager
 	 */
 	public void writeReport(PrintStream outputStream)
 	{
-		// TODO: Add report header and the vulnerabilityReport contents
-		outputStream.println("------------------------------------------------------------------------------");
+		outputStream.println("********************************************************************************");
 		outputStream.println("Report for site based at " + baseUrl + "\n");
-		
+		outputStream.println("Discovered Attack Surface:\n");
 		
 		for(String url: webPages.keySet())
 		{
-			outputStream.println("------------------------------------------------------------------------------");
+			outputStream.println("--------------------------------------------------------------------------------");
 			outputStream.println("Page: " + url + "\n");
 			webPages.get(url).writeReport(outputStream);
 		}
 		
-		outputStream.println("------------------------------------------------------------------------------");
+		outputStream.println("--------------------------------------------------------------------------------");
+		
+		outputStream.println("Fuzzing Results:\n");
+		outputStream.println("--------------------------------------------------------------------------------");
+		outputStream.println(vulnerabilityReport.toString());
+		outputStream.println("--------------------------------------------------------------------------------");
+		outputStream.println("********************************************************************************");
 	}
 
 	/**
@@ -539,7 +580,12 @@ public class SiteInformationManager
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
 		SiteInformationManager informationManager = new SiteInformationManager();
-		informationManager.loadConfigurations(configurationFileName);
+		
+		if(!informationManager.loadConfigurations(configurationFileName))
+		{
+			return null;
+		}
+		
 		informationManager.performDiscovery();
 		informationManager.performFuzzing();
 		return informationManager;

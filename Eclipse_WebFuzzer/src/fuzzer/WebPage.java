@@ -127,18 +127,26 @@ public class WebPage
 	}
 	
 	public Page attemptAuthentication(WebForm form, String username, String password)
+		throws IOException
 	{
-		// TODO: Implement => need to figure out how to determine whether or not
-		// an authentication attempt was successful as well as how to get to the
-		// authenticated version of the page/ the page past the login page 
-		// programatically
-		
-		// Submit the username and password to the WebForm's username and password
-		// fields (if they exist) and then submit the form (?-> can forms be submited
-		// by calling click() on the form itself? if so is this the same as calling
-		// click() on the submit field?)
+		if(client != null)
+		{
+			return form.submitAuthentication(username, password);
+		}
 		
 		return null;
+	}
+	
+	public void shutdown()
+	{
+		client.closeAllWindows();
+		client = null;
+	}
+	
+	@Override
+	public void finalize()
+	{
+		shutdown();
 	}
 	
 	public void writeReport(PrintStream outputStream)
