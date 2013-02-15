@@ -296,7 +296,6 @@ public class SiteInformationManager
 	{
 		configurations = new FuzzerData();
 		
-		FileInputStream fstream;
 		try 
 		{
 			Scanner inputScanner = new Scanner(new File(configurationFileName));
@@ -370,13 +369,14 @@ public class SiteInformationManager
 				else if(nextToken.equals("completeness:"))
 				{
 					String complete = tokenizer.nextToken();
-					if((complete.equalsIgnoreCase("full")))
+					
+					if(complete == null)
 					{
-						configurations.setCompleteness(true);
+						configurations.setCompleteness(100); //Defaults to full completeness
 					}
-					else if((complete.equalsIgnoreCase("random")))
+					else
 					{
-						configurations.setCompleteness(false);
+						configurations.setCompleteness(Integer.parseInt(complete));
 					}
 				}
 				else
@@ -499,6 +499,8 @@ public class SiteInformationManager
 		{
 			WebPage page = webPages.get(pageName);
 			
+			//TODO: Implement random percentage of forms
+			
 			for(WebForm form: page.getForms())
 			{
 				HtmlSubmitInput submitField = form.getSubmitField();
@@ -510,20 +512,54 @@ public class SiteInformationManager
 				}
 				
 				Page resultingPage;
+				String pageAsString;
 				for(HtmlElement input: form.getInputs())
 				{
 					for(String vector: vectors)
 					{
+						String sensitiveDataFound = "";
 						input.type(vector);
 						
 						// Submits the form
 						resultingPage = submitField.click();
+						pageAsString = resultingPage.getWebResponse().getContentAsString();
 						
-						// TODO: Figure out how to verify whether or not there is a 
-						// potential vulnerability
+						//Check for sensitive data in response page
+						for(String s: sensitiveData)
+						{
+							if(pageAsString.contains(s))
+							{
+								sensitiveDataFound.concat(s + ", ");
+							}
+						}
 						
-						// vulnerabilityReport.append("");
+						if(!sensitiveDataFound.equals(""))
+						{
+						
+							if(form.getForm().getId() == null && input.getId() == null)
+							{
+								vulnerabilityReport.append("Page: " + pageName + "| Form: ID-less" + " | Input: ID=less\n" +
+										"	Sensitive Data Found: " + sensitiveDataFound + "\n");
+							}
+							else if(form.getForm().getId() == null)
+							{
+								vulnerabilityReport.append("Page: " + pageName + "| Form: ID-less" + " | Input: " + input.getId() + "\n" +
+										"	Sensitive Data Found: " + sensitiveDataFound + "\n");
+							}
+							else if(input.getId() == null)
+							{
+								vulnerabilityReport.append("Page: " + pageName + "| Form: " + form.getForm().getId() + " | Input: ID=less\n" +
+										"	Sensitive Data Found: " + sensitiveDataFound + "\n");
+							}
+							else
+							{
+								vulnerabilityReport.append("Page: " + pageName + "| Form: " + form.getForm().getId() + " | Input: " + input.getId() + "\n" +
+										"	Sensitive Data Found: " + sensitiveDataFound + "\n");
+							}
+						}
 					}
+					
+					String unsanitizedInputs = "";
 					
 					for(String inputToSanitize: sanitationInputs)
 					{
@@ -536,9 +572,38 @@ public class SiteInformationManager
 						
 						// TODO: Check to see if the input was sanitized (changed)
 						// at all
+						if(resultingPage.getUrl().getQuery().contains(inputToSanitize))
+						{
+							unsanitizedInputs.concat(inputToSanitize + ", ");
+						}
 						
-						// vulnerabilityReport.append("");
 					}
+					
+					if(!unsanitizedInputs.equals(""))
+					{
+					
+						if(form.getForm().getId() == null && input.getId() == null)
+						{
+							vulnerabilityReport.append("Page: " + pageName + "| Form: ID-less" + " | Input: ID=less\n" +
+									"	Unsanitized Inputs Found: " + unsanitizedInputs + "\n");
+						}
+						else if(form.getForm().getId() == null)
+						{
+							vulnerabilityReport.append("Page: " + pageName + "| Form: ID-less" + " | Input: " + input.getId() + "\n" +
+									"	Unsanitized Inputs Found: " + unsanitizedInputs + "\n");
+						}
+						else if(input.getId() == null)
+						{
+							vulnerabilityReport.append("Page: " + pageName + "| Form: " + form.getForm().getId() + " | Input: ID=less\n" +
+									"	Unsanitized Inputs Found: " + unsanitizedInputs + "\n");
+						}
+						else
+						{
+							vulnerabilityReport.append("Page: " + pageName + "| Form: " + form.getForm().getId() + " | Input: " + input.getId() + "\n" +
+									"	Unsanitized Inputs Found: " + unsanitizedInputs + "\n");
+						}
+					}
+					
 				}
 			}
 		}
