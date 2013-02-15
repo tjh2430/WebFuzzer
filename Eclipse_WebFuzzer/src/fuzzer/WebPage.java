@@ -91,11 +91,6 @@ public class WebPage
 		}
 	}
 
-	public WebClient getClient()
-	{
-		return client;
-	}
-
 	public CookieManager getCookieMgmt()
 	{
 		return cookieMgmt;
