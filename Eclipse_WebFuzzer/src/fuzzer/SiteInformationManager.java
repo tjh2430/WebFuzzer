@@ -498,6 +498,8 @@ public class SiteInformationManager
 		{
 			WebPage page = webPages.get(pageName);
 			
+			//TODO: Implement random percentage of forms
+			
 			for(WebForm form: page.getForms())
 			{
 				HtmlSubmitInput submitField = form.getSubmitField();
@@ -530,27 +532,33 @@ public class SiteInformationManager
 							}
 						}
 						
-						if(form.getForm().getId() == null && input.getId() == null)
+						if(!sensitiveDataFound.equals(""))
 						{
-							vulnerabilityReport.append("Page: " + pageName + "| Form: ID-less" + " | Input: ID=less\n" +
-									"	Sensitive Data Found: " + sensitiveDataFound + "\n");
-						}
-						else if(form.getForm().getId() == null)
-						{
-							vulnerabilityReport.append("Page: " + pageName + "| Form: ID-less" + " | Input: " + input.getId() + "\n" +
-									"	Sensitive Data Found: " + sensitiveDataFound + "\n");
-						}
-						else if(input.getId() == null)
-						{
-							vulnerabilityReport.append("Page: " + pageName + "| Form: " + form.getForm().getId() + " | Input: ID=less\n" +
-									"	Sensitive Data Found: " + sensitiveDataFound + "\n");
-						}
-						else
-						{
-							vulnerabilityReport.append("Page: " + pageName + "| Form: " + form.getForm().getId() + " | Input: " + input.getId() + "\n" +
-									"	Sensitive Data Found: " + sensitiveDataFound + "\n");
+						
+							if(form.getForm().getId() == null && input.getId() == null)
+							{
+								vulnerabilityReport.append("Page: " + pageName + "| Form: ID-less" + " | Input: ID=less\n" +
+										"	Sensitive Data Found: " + sensitiveDataFound + "\n");
+							}
+							else if(form.getForm().getId() == null)
+							{
+								vulnerabilityReport.append("Page: " + pageName + "| Form: ID-less" + " | Input: " + input.getId() + "\n" +
+										"	Sensitive Data Found: " + sensitiveDataFound + "\n");
+							}
+							else if(input.getId() == null)
+							{
+								vulnerabilityReport.append("Page: " + pageName + "| Form: " + form.getForm().getId() + " | Input: ID=less\n" +
+										"	Sensitive Data Found: " + sensitiveDataFound + "\n");
+							}
+							else
+							{
+								vulnerabilityReport.append("Page: " + pageName + "| Form: " + form.getForm().getId() + " | Input: " + input.getId() + "\n" +
+										"	Sensitive Data Found: " + sensitiveDataFound + "\n");
+							}
 						}
 					}
+					
+					String unsanitizedInputs = "";
 					
 					for(String inputToSanitize: sanitationInputs)
 					{
@@ -563,9 +571,38 @@ public class SiteInformationManager
 						
 						// TODO: Check to see if the input was sanitized (changed)
 						// at all
+						if(resultingPage.getUrl().getQuery().contains(inputToSanitize))
+						{
+							unsanitizedInputs.concat(inputToSanitize + ", ");
+						}
 						
-						// vulnerabilityReport.append("");
 					}
+					
+					if(!unsanitizedInputs.equals(""))
+					{
+					
+						if(form.getForm().getId() == null && input.getId() == null)
+						{
+							vulnerabilityReport.append("Page: " + pageName + "| Form: ID-less" + " | Input: ID=less\n" +
+									"	Unsanitized Inputs Found: " + unsanitizedInputs + "\n");
+						}
+						else if(form.getForm().getId() == null)
+						{
+							vulnerabilityReport.append("Page: " + pageName + "| Form: ID-less" + " | Input: " + input.getId() + "\n" +
+									"	Unsanitized Inputs Found: " + unsanitizedInputs + "\n");
+						}
+						else if(input.getId() == null)
+						{
+							vulnerabilityReport.append("Page: " + pageName + "| Form: " + form.getForm().getId() + " | Input: ID=less\n" +
+									"	Unsanitized Inputs Found: " + unsanitizedInputs + "\n");
+						}
+						else
+						{
+							vulnerabilityReport.append("Page: " + pageName + "| Form: " + form.getForm().getId() + " | Input: " + input.getId() + "\n" +
+									"	Unsanitized Inputs Found: " + unsanitizedInputs + "\n");
+						}
+					}
+					
 				}
 			}
 		}
