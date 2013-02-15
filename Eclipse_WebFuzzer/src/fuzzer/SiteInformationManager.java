@@ -787,6 +787,7 @@ public class SiteInformationManager
 	      HttpURLConnection.setFollowRedirects(false);
 	      HttpURLConnection con =
 	         (HttpURLConnection) new URL(url).openConnection();
+	      con.setInstanceFollowRedirects(false);
 	      con.setRequestMethod("HEAD");
 	      return (con.getResponseCode() == HttpURLConnection.HTTP_OK);
 	    }
