@@ -2,6 +2,7 @@ package fuzzer;
 
 import java.io.BufferedReader;
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.StringTokenizer;
 
@@ -90,9 +92,14 @@ public class SiteInformationManager
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
 		WebPage webPage = WebPage.performDiscoveryOnPage(pageUrl);
+		
+		if(webPage == null)
+		{
+			return;
+		}
+		
 		webPages.put(pageUrl, webPage);
 		
-		// TODO: Make sure that this check on the username works properly
 		String username = configurations.getUsername();
 		if(webPage.requiresAuthentication() && username != null && username.trim().length() > 0)
 		{
@@ -110,7 +117,6 @@ public class SiteInformationManager
 				{
 					for(String word: passwordDictionary)
 					{
-						// TODO: Make sure that this cast won't cause problems
 						authenticationPage = (HtmlPage) webPage.attemptAuthentication(form, username, word);
 						checkAuthenticationPage(authenticationPage, pageUrl, username, word);
 					}
@@ -166,14 +172,9 @@ public class SiteInformationManager
 	private void checkAuthenticationPage(HtmlPage authenticationPage, String pageUrl, String username, String password)
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
-		if(authenticationPage != null)// && --TODO: add check for authentication success string here--)
+		if(authenticationPage != null && authenticationPage.asText() != null &&
+		   authenticationPage.asText().contains(configurations.getAuthenticationSuccessString()))
 		{
-			// TODO: Remove
-			System.out.println("***********************************************************");
-			System.out.println("Authentication response from " + pageUrl + ": " + authenticationPage.getWebResponse().getContentAsString());
-			System.out.println("***********************************************************");
-			//
-			
 			// Records that this was a successful combination
 			vulnerabilityReport.append("Successful authentication with username \"" + 
 					username + "\" and password \"" + password + "\" on page at " + 
@@ -298,15 +299,13 @@ public class SiteInformationManager
 		FileInputStream fstream;
 		try 
 		{
-			fstream = new FileInputStream(configurationFileName);
-			DataInputStream in = new DataInputStream(fstream);
-			BufferedReader br = new BufferedReader(new InputStreamReader(in));
-			
+			Scanner inputScanner = new Scanner(new File(configurationFileName));
 			StringTokenizer tokenizer;
-			String line, nextToken;
+			String nextToken;
 			
-			while((line = br.readLine()) != null){
-				tokenizer = new StringTokenizer(line);
+			while(inputScanner.hasNextLine())
+			{
+				tokenizer = new StringTokenizer(inputScanner.nextLine());
 				
 				nextToken = tokenizer.nextToken();
 				
@@ -336,7 +335,24 @@ public class SiteInformationManager
 				}
 				else if(nextToken.equals("authentication_success_string:"))
 				{
-					configurations.setAuthenticationSuccessString(tokenizer.nextToken());
+					String authenticationSuccessString = "";
+					while(tokenizer.hasMoreTokens())
+					{
+						authenticationSuccessString = authenticationSuccessString.concat(" " + tokenizer.nextToken());
+					}
+					
+					authenticationSuccessString = authenticationSuccessString.trim();
+					if(authenticationSuccessString.length() > 0)
+					{
+						configurations.setAuthenticationSuccessString(authenticationSuccessString);
+					}
+					else
+					{
+						// TODO: Make sure that this case gets handled properly 
+						// (i.e. authenticaiton will always fail since we don't know 
+						// how to determine if it was successful)
+						configurations.setAuthenticationSuccessString(null);
+					}
 				}
 				else if(nextToken.equals("site_url:"))
 				{
@@ -363,9 +379,13 @@ public class SiteInformationManager
 						configurations.setCompleteness(false);
 					}
 				}
+				else
+				{
+					System.err.println("Unknown configuration option encountered: " + nextToken);
+				}
 			}
 			
-			br.close();
+			inputScanner.close();
 		} 
 		catch (FileNotFoundException e) 
 		{
@@ -373,23 +393,12 @@ public class SiteInformationManager
 			e.printStackTrace();
 			return false;
 		}
-		catch (IOException e) 
+		catch (NumberFormatException e) 
 		{
 			e.printStackTrace();
 			return false;
 		}
 
-		// TODO: Remove
-		System.out.println("\nLoaded Configurations:\n");
-		System.out.println("Seach Complete: " + configurations.completeness());
-		System.out.println("Time Gap: " + configurations.timeGap());
-		System.out.println("Username: " + configurations.getUsername());
-		System.out.println("Password: " + configurations.getPassword());
-		System.out.println("Password Guessing Is On: " + configurations.passwordGuessingIsOn());
-		System.out.println("Data File Name: " + configurations.getDataFileName());
-		System.out.println("Authentication Success String: " + configurations.getAuthenticationSuccessString());
-		//
-		
 		if(configurations.getDataFileName() != null && 
 		   !configurations.getDataFileName().isEmpty())
 		{
@@ -421,38 +430,23 @@ public class SiteInformationManager
 			while((line = br.readLine()) != null){
 				if(line.equals("external fuzz vectors:"))
 				{
-					while((line = br.readLine()) != null)
-					{
-						vectors.add(line);
-					}
+					vectors = readDataSectionIntoList(vectors, br);
 				}
 				else if(line.equals("sensitive data:"))
 				{
-					while((line = br.readLine()) != null)
-					{
-						sensitiveData.add(line);
-					}
+					sensitiveData = readDataSectionIntoList(sensitiveData, br);
 				}
 				else if(line.equals("password dictionary:"))
 				{
-					while((line = br.readLine()) != null)
-					{
-						passwordDictionary.add(line);
-					}
+					passwordDictionary = readDataSectionIntoList(passwordDictionary, br);
 				}
 				else if(line.equals("sanitization checking inputs:"))
 				{
-					while((line = br.readLine()) != null)
-					{
-						sanitationInputs.add(line);
-					}
+					sanitationInputs = readDataSectionIntoList(sanitationInputs, br);
 				}
 				else if(line.equals("page guessing:"))
 				{
-					while((line = br.readLine()) != null)
-					{
-						pageGuesses.add(line);
-					}
+					pageGuesses = readDataSectionIntoList(pageGuesses, br);
 				}
 			}
 			
@@ -472,6 +466,26 @@ public class SiteInformationManager
 		}
 		
 		return true;
+	}
+	
+	private List<String> readDataSectionIntoList(List<String> dataList, BufferedReader br)
+		throws IOException
+	{
+		String line;
+		while((line = br.readLine()) != null)
+		{
+			if(line.trim().length() == 0)
+			{
+				// If an empty line is encountered then continue 
+				// processing the file (the next line read in will
+				// be the header for the next data section
+				break;
+			}
+			
+			dataList.add(line);
+		}
+		
+		return dataList;
 	}
 	
 	/**
@@ -550,6 +564,8 @@ public class SiteInformationManager
 		}
 		
 		outputStream.println("--------------------------------------------------------------------------------");
+		outputStream.println("--------------------------------------------------------------------------------");
+		outputStream.println("--------------------------------------------------------------------------------");
 		
 		outputStream.println("Fuzzing Results:\n");
 		outputStream.println("--------------------------------------------------------------------------------");
@@ -558,6 +574,22 @@ public class SiteInformationManager
 		outputStream.println("********************************************************************************");
 	}
 
+	/**
+	 * Prints the current configurations to standard out (for debuggin purposes).
+	 */
+	public void printConfigurations()
+	{
+		System.out.println("\nLoaded Configurations:\n");
+		System.out.println("Seach Complete: " + configurations.completeness());
+		System.out.println("Time Gap: " + configurations.timeGap());
+		System.out.println("Username: " + configurations.getUsername());
+		System.out.println("Password: " + configurations.getPassword());
+		System.out.println("Password Guessing Is On: " + configurations.passwordGuessingIsOn());
+		System.out.println("Data File Name: " + configurations.getDataFileName());
+		System.out.println("Authentication Success String: " + configurations.getAuthenticationSuccessString());
+		System.out.println();
+	}
+	
 	/**
 	 * Initializes and returns a new SiteInformationManager using the configurations contained in 
 	 * the configuration file with the given file name after performing attack surface discovery. 

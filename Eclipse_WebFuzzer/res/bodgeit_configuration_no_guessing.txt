@@ -1,0 +1,8 @@
+app_data_file: fuzzer_data_file.txt
+username: user
+password: password
+password_guessing: on
+authentication_success_string: logged in successfully 
+site_url: http://127.0.0.1:8080/bodgeit/
+time_gap: 0
+completeness: full

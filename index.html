@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<body onload="validateForm()">
+
+<!--<form name="stupid_form" action="http://127.0.0.1:8080/stupid_authentication/authenticated.html" onsubmit="return validateForm()" href="http://127.0.0.1:8080/stupid_authentication/authenticated.html">-->
+<form name="stupid_form" action="" onsubmit="return validateForm()">
+Username: <input type="text" name="user"><br>
+Password: <input type="password" name="password"><br>
+<input type="submit" value="Submit">
+</form>
+
+<p><b>Note:</b> The characters in a password field are masked (shown as asterisks or circles).</p><br><br>
+
+<p id="authentication_status"/>
+
+</body>
+
+<script>
+function validateForm()
+{
+var x=document.forms["stupid_form"]["user"].value;
+var y=document.forms["stupid_form"]["password"].value;
+if (x!="user" || y!="password")
+  {
+  document.getElementById("authentication_status").innerHTML="Failure!";
+  return false;
+  }
+else
+  {
+  document.getElementById("authentication_status").innerHTML="Success!";
+  return false;
+  }
+}
+</script>
+
+</html>
+

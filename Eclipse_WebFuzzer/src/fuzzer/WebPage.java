@@ -129,7 +129,7 @@ public class WebPage
 	public Page attemptAuthentication(WebForm form, String username, String password)
 		throws IOException
 	{
-		if(client != null)
+		if(client != null && form != null)
 		{
 			return form.submitAuthentication(username, password);
 		}
@@ -157,11 +157,11 @@ public class WebPage
 			
 			if(formAttrNode == null)
 			{
-				outputStream.println("Outputs for an id-less form\n");
+				outputStream.println("Inputs for an id-less form\n");
 			}
 			else
 			{
-				outputStream.println("form id: " + formAttrNode.getValue() + "\n");
+				outputStream.println("Inputs for form id: " + formAttrNode.getValue() + "\n");
 			}
 			
 			for(DomElement e: form.getInputs())

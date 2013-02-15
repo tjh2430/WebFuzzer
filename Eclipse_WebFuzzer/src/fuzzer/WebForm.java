@@ -43,7 +43,6 @@ public class WebForm
 		{
 			String inputType = input.getAttribute("type");
 			
-			// TODO: Make sure that these casts do not cause any problems
 			if(inputType == null)
 			{
 				continue;
@@ -56,10 +55,9 @@ public class WebForm
 			{
 				submitField = (HtmlSubmitInput) input;
 			}
-			else if(input.getId() != null && input.getId().contains("user"))
+			else if((input.getId() != null && input.getId().contains("user")) ||
+					(input.getAttribute("name") != null && input.getAttribute("name").contains("user")))
 			{
-				// TODO: Check is "contains("user") is the appropriate way to do this
-				// (i.e. will it work?)
 				usernameField = (HtmlInput) input;
 			}
 		}
