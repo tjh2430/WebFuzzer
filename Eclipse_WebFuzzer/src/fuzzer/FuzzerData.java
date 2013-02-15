@@ -12,7 +12,8 @@ public class FuzzerData {
 	private static FuzzerData self;
 	
 	private boolean passwordGuessing = false;
-	private int TIME_GAP = 0, SEARCH_COMPLETE;
+	private long TIME_GAP = 0; 
+	private int SEARCH_COMPLETE;
 	private String username, password, dataFileName, authenticationSuccessString; 
 	
 	public FuzzerData(){
@@ -35,7 +36,7 @@ public class FuzzerData {
 		TIME_GAP = gap;
 	}
 	
-	public float timeGap(){
+	public long timeGap(){
 		return TIME_GAP;
 	}
 	

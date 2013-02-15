@@ -84,6 +84,17 @@ public class SiteInformationManager
 		performDiscoveryOnUrl(baseUrl);
 		performPageGuessing();
 	}
+	
+	private void doTimeGap(){
+		// Implement time gap in between each page to be discovered
+		long sleeptime = configurations.timeGap();
+		try {
+			Thread.sleep(sleeptime);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
 	/**
 	 * Attempts to enumerate the attack surface for the web page at the given URL. 
@@ -92,11 +103,12 @@ public class SiteInformationManager
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
 		WebPage webPage = WebPage.performDiscoveryOnPage(pageUrl);
-		
 		if(webPage == null)
 		{
 			return;
 		}
+		
+		doTimeGap();
 		
 		webPages.put(pageUrl, webPage);
 		
@@ -250,6 +262,7 @@ public class SiteInformationManager
 				WebPage webPage = WebPage.performDiscoveryOnPage(linkUrl);
 				performDiscoveryOnLinks(webPage, true);
 			}
+			doTimeGap();
 		}
 	}
 	
@@ -357,7 +370,9 @@ public class SiteInformationManager
 				{
 					baseUrl = tokenizer.nextToken();
 					
-					if(baseUrl == null || !urlExists(baseUrl))
+					boolean urlExists = urlExists(baseUrl);
+					doTimeGap();
+					if(baseUrl == null || !urlExists)
 					{
 						return false;
 					}
