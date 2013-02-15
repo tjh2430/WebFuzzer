@@ -125,6 +125,10 @@ public class SiteInformationManager
 				password = null;
 				
 				// TODO: Account for whether full or random completeness is on
+				if(configurations.completeness() != 100)
+				{
+					
+				}
 				for(WebForm form: authenticationForms)
 				{
 					for(String word: passwordDictionary)
