@@ -296,7 +296,6 @@ public class SiteInformationManager
 	{
 		configurations = new FuzzerData();
 		
-		FileInputStream fstream;
 		try 
 		{
 			Scanner inputScanner = new Scanner(new File(configurationFileName));
@@ -510,19 +509,47 @@ public class SiteInformationManager
 				}
 				
 				Page resultingPage;
+				String pageAsString;
 				for(HtmlElement input: form.getInputs())
 				{
 					for(String vector: vectors)
 					{
+						String sensitiveDataFound = "";
 						input.type(vector);
 						
 						// Submits the form
 						resultingPage = submitField.click();
+						pageAsString = resultingPage.getWebResponse().getContentAsString();
 						
-						// TODO: Figure out how to verify whether or not there is a 
-						// potential vulnerability
+						//Check for sensitive data in response page
+						for(String s: sensitiveData)
+						{
+							if(pageAsString.contains(s))
+							{
+								sensitiveDataFound.concat(s + ", ");
+							}
+						}
 						
-						// vulnerabilityReport.append("");
+						if(form.getForm().getId() == null && input.getId() == null)
+						{
+							vulnerabilityReport.append("Page: " + pageName + "| Form: ID-less" + " | Input: ID=less\n" +
+									"	Sensitive Data Found: " + sensitiveDataFound + "\n");
+						}
+						else if(form.getForm().getId() == null)
+						{
+							vulnerabilityReport.append("Page: " + pageName + "| Form: ID-less" + " | Input: " + input.getId() + "\n" +
+									"	Sensitive Data Found: " + sensitiveDataFound + "\n");
+						}
+						else if(input.getId() == null)
+						{
+							vulnerabilityReport.append("Page: " + pageName + "| Form: " + form.getForm().getId() + " | Input: ID=less\n" +
+									"	Sensitive Data Found: " + sensitiveDataFound + "\n");
+						}
+						else
+						{
+							vulnerabilityReport.append("Page: " + pageName + "| Form: " + form.getForm().getId() + " | Input: " + input.getId() + "\n" +
+									"	Sensitive Data Found: " + sensitiveDataFound + "\n");
+						}
 					}
 					
 					for(String inputToSanitize: sanitationInputs)
