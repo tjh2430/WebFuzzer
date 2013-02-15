@@ -369,13 +369,14 @@ public class SiteInformationManager
 				else if(nextToken.equals("completeness:"))
 				{
 					String complete = tokenizer.nextToken();
-					if((complete.equalsIgnoreCase("full")))
+					
+					if(complete == null)
 					{
-						configurations.setCompleteness(true);
+						configurations.setCompleteness(100); //Defaults to full completeness
 					}
-					else if((complete.equalsIgnoreCase("random")))
+					else
 					{
-						configurations.setCompleteness(false);
+						configurations.setCompleteness(Integer.parseInt(complete));
 					}
 				}
 				else

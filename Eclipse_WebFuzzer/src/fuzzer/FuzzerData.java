@@ -11,9 +11,8 @@ public class FuzzerData {
 	
 	private static FuzzerData self;
 	
-	private boolean SEARCH_COMPLETE = true;
 	private boolean passwordGuessing = false;
-	private int TIME_GAP = 0;
+	private int TIME_GAP = 0, SEARCH_COMPLETE;
 	private String username, password, dataFileName, authenticationSuccessString; 
 	
 	public FuzzerData(){
@@ -28,7 +27,7 @@ public class FuzzerData {
 		return self;
 	}
 	
-	public void setCompleteness(boolean complete){
+	public void setCompleteness(int complete){
 		SEARCH_COMPLETE = complete;
 	}
 	
@@ -40,13 +39,13 @@ public class FuzzerData {
 		return TIME_GAP;
 	}
 	
-	public boolean completeness(){
+	public int completeness(){
 		return SEARCH_COMPLETE;
 	}
 	
 	public String toString(){
 		String result = "CURRENT SYSTEM OPTIONS:\n";
-		String complete = SEARCH_COMPLETE ? "Complete" : "Random";
+		String complete = SEARCH_COMPLETE + "%";
 		result += "\tSearch Completeness => " + complete + "\n";
 		result += "\tTime Gap => " + this.TIME_GAP + "\n";
 		return result;
