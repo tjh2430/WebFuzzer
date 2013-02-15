@@ -13,8 +13,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -41,7 +43,6 @@ public class SiteInformationManager
 	private Map<String, WebPage> webPages;
 	public FuzzerData configurations;
 	
-	// TODO: Add sensitive data checks
 	private List<String> vectors, sensitiveData, passwordDictionary, 
 								sanitationInputs, pageGuesses;
 	
@@ -91,7 +92,6 @@ public class SiteInformationManager
 		try {
 			Thread.sleep(sleeptime);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -124,11 +124,6 @@ public class SiteInformationManager
 			{
 				password = null;
 				
-				// TODO: Account for whether full or random completeness is on
-				if(configurations.completeness() != 100)
-				{
-					
-				}
 				for(WebForm form: authenticationForms)
 				{
 					for(String word: passwordDictionary)
@@ -298,7 +293,6 @@ public class SiteInformationManager
 		} 
 		catch (IOException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -391,16 +385,25 @@ public class SiteInformationManager
 					
 					if(complete == null)
 					{
-						configurations.setCompleteness(100); //Defaults to full completeness
+						//Defaults to full completeness
+						configurations.setCompleteness(100); 
 					}
 					else
 					{
-						configurations.setCompleteness(Integer.parseInt(complete));
+						int completeness = Integer.parseInt(complete);
+						
+						if(completeness <= 0 || completeness > 100)
+						{
+							System.out.println("Configuration error in " + configurationFileName +
+									": completeness must be an integer value between 1 and 100 inclusively");
+						}
+						
+						configurations.setCompleteness(completeness);
 					}
 				}
 				else
 				{
-					System.err.println("Unknown configuration option encountered: " + nextToken);
+					System.out.println("Unknown configuration option encountered: " + nextToken);
 				}
 			}
 			
@@ -517,11 +520,26 @@ public class SiteInformationManager
 		for(String pageName: webPages.keySet())
 		{
 			WebPage page = webPages.get(pageName);
-			
-			//TODO: Implement random percentage of forms
-			
-			for(WebForm form: page.getForms())
+			List<WebForm> forms = page.getForms();
+
+			Set<Integer> formIndices;
+			if(configurations.completeness() == 100)
 			{
+				// Adds all of the indices since every form is going to be tested
+				formIndices = new HashSet<Integer>();
+				for(int i = 0; i < forms.size(); i++)
+				{
+					formIndices.add(i);	
+				}
+			}
+			else
+			{
+				formIndices = generateTestIndices(forms.size(), configurations.completeness());
+			}
+			
+			for(Integer index: formIndices)
+			{
+				WebForm form = forms.get(index);
 				HtmlSubmitInput submitField = form.getSubmitField();
 				if(submitField == null)
 				{
@@ -543,7 +561,7 @@ public class SiteInformationManager
 						resultingPage = submitField.click();
 						pageAsString = resultingPage.getWebResponse().getContentAsString();
 						
-						//Check for sensitive data in response page
+						// Checks for sensitive data in response page
 						for(String s: sensitiveData)
 						{
 							if(pageAsString.contains(s))
@@ -589,8 +607,7 @@ public class SiteInformationManager
 						// Submits the form
 						resultingPage = submitField.click();
 						
-						// TODO: Check to see if the input was sanitized (changed)
-						// at all
+						// Checks if the input was sanitized (changed) at all
 						if(resultingPage.getUrl().getQuery().contains(inputToSanitize))
 						{
 							unsanitizedInputs.concat(inputToSanitize + ", ");
@@ -628,6 +645,24 @@ public class SiteInformationManager
 		}
 	}
 	
+	private Set<Integer> generateTestIndices(int total, int completeness)
+	{
+		Set<Integer> testIndices = new HashSet<Integer>();
+		Random random = new Random();
+		
+		int index;
+		for(int i = 0; i < total; i++)
+		{
+			do
+			{
+				index = random.nextInt(total);
+			}
+			while(testIndices.contains(index));
+		}
+		
+		return testIndices;
+	}
+
 	/**
 	 * Writes a detailed report on the vulnerability and attack surface 
 	 * information which has been discovered for the site being examined.
@@ -707,9 +742,6 @@ public class SiteInformationManager
 		return informationManager;
 	}
 	
-	// TODO: Remove this method from the WebFuzzer class (they are exact
-	// copies of each other, and since its static it only needs to be in
-	// one place anyways)
 	public static String getBaseUrl(String url)
 	{
 		if(url == null || url.isEmpty())
@@ -750,8 +782,6 @@ public class SiteInformationManager
 	{
 	    try {
 	      HttpURLConnection.setFollowRedirects(false);
-	      // note : you may also need
-	      //        HttpURLConnection.setInstanceFollowRedirects(false)
 	      HttpURLConnection con =
 	         (HttpURLConnection) new URL(url).openConnection();
 	      con.setRequestMethod("HEAD");
