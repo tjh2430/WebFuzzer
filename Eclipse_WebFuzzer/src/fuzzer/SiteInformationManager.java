@@ -258,7 +258,7 @@ public class SiteInformationManager
 			// found page).
 			if(urlExists(linkUrl))
 			{
-				vulnerabilityReport.append("Page guessing found an unlinked page at " +	linkUrl);
+				vulnerabilityReport.append("Page guessing found an unlinked page at " +	linkUrl + "\n");
 				
 				WebPage webPage = WebPage.performDiscoveryOnPage(linkUrl);
 				performDiscoveryOnLinks(webPage, true);
@@ -611,11 +611,14 @@ public class SiteInformationManager
 						resultingPage = submitField.click();
 						
 						// Checks if the input was sanitized (changed) at all
-						if(resultingPage.getUrl().getQuery().contains(inputToSanitize))
+						if(resultingPage.getUrl().getQuery() != null)
 						{
-							unsanitizedInputs.concat(inputToSanitize + ", ");
+							if(resultingPage.getUrl().getQuery().contains(inputToSanitize))
+							{
+								unsanitizedInputs.concat(inputToSanitize + ", ");
+							}
 						}
-						
+							
 					}
 					
 					if(!unsanitizedInputs.equals(""))

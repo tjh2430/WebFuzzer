@@ -3,6 +3,6 @@ username: user
 password: password
 password_guessing: off
 authentication_success_string: Sign Out
-site_url: http://127.0.0.1:8080/bodgeit/
+site_url: http://127.0.0.1:8080/jpetstore/
 time_gap: 0
 completeness: 100
