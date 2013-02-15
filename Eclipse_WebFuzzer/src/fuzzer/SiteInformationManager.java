@@ -113,7 +113,9 @@ public class SiteInformationManager
 		webPages.put(pageUrl, webPage);
 		
 		String username = configurations.getUsername();
-		if(webPage.requiresAuthentication() && username != null && username.trim().length() > 0)
+		if(webPage.requiresAuthentication() && 
+		   username != null && username.trim().length() > 0 &&
+		   configurations.getAuthenticationSuccessString() != null)
 		{
 			HtmlPage authenticationPage = null;
 
@@ -358,9 +360,10 @@ public class SiteInformationManager
 					}
 					else
 					{
-						// TODO: Make sure that this case gets handled properly 
-						// (i.e. authenticaiton will always fail since we don't know 
-						// how to determine if it was successful)
+						// If no authentication success string is provided that
+						// configuration field is set to null, in which case 
+						// authenticaiton will not be attempted since there would
+						// be no way to determine if authentication was successful
 						configurations.setAuthenticationSuccessString(null);
 					}
 				}

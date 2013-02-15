@@ -1,8 +1,8 @@
 app_data_file: fuzzer_data_file.txt
-username: user@fakewebsite.com
+username: user
 password: password
 password_guessing: off
-authentication_success_string: logged in successfully 
+authentication_success_string: Sign Out
 site_url: http://127.0.0.1:8080/bodgeit/
 time_gap: 0
 completeness: full
