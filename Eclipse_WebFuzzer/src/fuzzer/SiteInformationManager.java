@@ -544,14 +544,17 @@ public class SiteInformationManager
 			{
 				WebForm form = forms.get(index);
 				HtmlSubmitInput submitField = form.getSubmitField();
-				if(submitField == null)
+				
+				//TODO: Needs to be adjusted for different sites
+				//Certain submit inputs will cause errors when submitting
+				if(submitField == null || submitField.asText().contains("Add to Basket"))
 				{
 					// If the form cannot be submitted then nothing can be done
 					// with this form
 					break;
 				}
 				
-				Page resultingPage;
+				Page resultingPage = null;
 				String pageAsString;
 				for(HtmlElement input: form.getInputs())
 				{
@@ -561,7 +564,14 @@ public class SiteInformationManager
 						input.type(vector);
 						
 						// Submits the form
-						resultingPage = submitField.click();
+						try
+						{
+							resultingPage = submitField.click();
+						}
+						catch (FailingHttpStatusCodeException f)
+						{
+							continue;
+						}
 						pageAsString = resultingPage.getWebResponse().getContentAsString();
 						
 						// Checks for sensitive data in response page

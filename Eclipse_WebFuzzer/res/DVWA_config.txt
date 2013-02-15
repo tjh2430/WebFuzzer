@@ -2,7 +2,7 @@ app_data_file: fuzzer_data_file.txt
 username: admin
 password: password
 password_guessing: off
-authentication_success_string: logged in successfully 
+authentication_success_string: You have logged in as 'admin' 
 site_url: http://127.0.0.1/dvwa/login.php
 time_gap: 0
 completeness: 100
