@@ -39,7 +39,7 @@ import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
  */
 public class SiteInformationManager
 {
-	private String baseUrl;
+	private String indexUrl, baseUrl;
 	private Map<String, WebPage> webPages;
 	public FuzzerData configurations;
 	
@@ -82,7 +82,7 @@ public class SiteInformationManager
 		// page discovery has been performed because otherwise the page guessing
 		// method may inaccurately report that there are no links to a page when
 		// in fact links do exist, they just haven't been explored yet.
-		performDiscoveryOnUrl(baseUrl);
+		performDiscoveryOnUrl(indexUrl);
 		performPageGuessing();
 	}
 	
@@ -205,14 +205,13 @@ public class SiteInformationManager
 				for(HtmlAnchor link: links)
 				{
 					String linkUrl = discoveredPage.getPage().getFullyQualifiedUrl(link.getHrefAttribute()).toString();
-
+					
 					// If the page URL is not a part of the site being fuzzed of if this 
 					// page URL has already been discovered then nothing needs to be done
-					if(webPages.containsKey(linkUrl) || !linkUrl.startsWith(baseUrl))
+					if(webPages.containsKey(linkUrl) || !linkUrl.contains(baseUrl))
 					{
 						continue;
-					}
-								
+					}		
 					performDiscoveryOnUrl(linkUrl);			
 				}
 			}
@@ -233,13 +232,13 @@ public class SiteInformationManager
 		{
 			String linkUrl;
 			
-			if(baseUrl.endsWith("/"))
+			if(indexUrl.endsWith("/"))
 			{
-				linkUrl = baseUrl + pageGuess;
+				linkUrl = indexUrl + pageGuess;
 			}
 			else
 			{
-				linkUrl = baseUrl + "/" + pageGuess;
+				linkUrl = indexUrl + "/" + pageGuess;
 			}
 			
 			// If this page URL has already been discovered then nothing needs to
@@ -274,7 +273,7 @@ public class SiteInformationManager
 	
 	public String getBaseUrl()
 	{
-		return baseUrl;
+		return indexUrl;
 	}
 	
 	public WebPage getPage(String url)
@@ -369,14 +368,16 @@ public class SiteInformationManager
 				}
 				else if(nextToken.equals("site_url:"))
 				{
-					baseUrl = tokenizer.nextToken();
+					indexUrl = tokenizer.nextToken();
 					
-					boolean urlExists = urlExists(baseUrl);
+					boolean urlExists = urlExists(indexUrl);
 					doTimeGap();
-					if(baseUrl == null || !urlExists)
+					if(indexUrl == null || !urlExists)
 					{
 						return false;
 					}
+					//TODO: will need to be adjusted to remove last bit that is not part of the base url
+					baseUrl = indexUrl.replace("/login.php", "");
 				}
 				else if(nextToken.equals("time_gap:"))
 				{
@@ -688,7 +689,7 @@ public class SiteInformationManager
 	public void writeReport(PrintStream outputStream)
 	{
 		outputStream.println("********************************************************************************");
-		outputStream.println("Report for site based at " + baseUrl + "\n");
+		outputStream.println("Report for site based at " + indexUrl + "\n");
 		outputStream.println("Discovered Attack Surface:\n");
 		
 		for(String url: webPages.keySet())
