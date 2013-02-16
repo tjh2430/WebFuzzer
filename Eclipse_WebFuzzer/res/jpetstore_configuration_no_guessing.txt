@@ -1,8 +1,9 @@
 app_data_file: fuzzer_data_file.txt
-username: user
+username: j2ee
 password: password
 password_guessing: off
 authentication_success_string: Sign Out
 site_url: http://127.0.0.1:8080/jpetstore/
+base_url: http://127.0.0.1:8080/jpetstore/
 time_gap: 0
 completeness: 100

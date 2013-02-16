@@ -102,6 +102,13 @@ public class SiteInformationManager
 	private void performDiscoveryOnUrl(String pageUrl) 
 		throws FailingHttpStatusCodeException, MalformedURLException, IOException
 	{
+		if(!urlExists(pageUrl))
+		{
+			return;
+		}
+	
+		doTimeGap();
+		
 		WebPage webPage = WebPage.performDiscoveryOnPage(pageUrl);
 		if(webPage == null)
 		{
@@ -376,8 +383,10 @@ public class SiteInformationManager
 					{
 						return false;
 					}
-					//TODO: will need to be adjusted to remove last bit that is not part of the base url
-					baseUrl = indexUrl.replace("/login.php", "");
+				}
+				else if(nextToken.equals("base_url:"))
+				{
+					baseUrl = tokenizer.nextToken();
 				}
 				else if(nextToken.equals("time_gap:"))
 				{
@@ -546,9 +555,8 @@ public class SiteInformationManager
 				WebForm form = forms.get(index);
 				HtmlSubmitInput submitField = form.getSubmitField();
 				
-				//TODO: Needs to be adjusted for different sites
-				//Certain submit inputs will cause errors when submitting
-				if(submitField == null || submitField.asText().contains("Add to Basket"))
+				// Note: Certain submit inputs will cause errors when submitting
+				if(submitField == null)
 				{
 					// If the form cannot be submitted then nothing can be done
 					// with this form
@@ -571,8 +579,21 @@ public class SiteInformationManager
 						}
 						catch (FailingHttpStatusCodeException f)
 						{
-							continue;
+							f.printStackTrace();
+							break;
 						}
+						catch(IOException e)
+						{
+							e.printStackTrace();
+							break;
+						}
+						catch(Exception e)
+						{
+							// Catches unexpected and undeclared exceptions
+							e.printStackTrace();
+							break;
+						}
+						
 						pageAsString = resultingPage.getWebResponse().getContentAsString();
 						
 						// Checks for sensitive data in response page
@@ -619,7 +640,26 @@ public class SiteInformationManager
 						input.type(inputToSanitize);
 						
 						// Submits the form
-						resultingPage = submitField.click();
+						try
+						{
+							resultingPage = submitField.click();
+						}
+						catch (FailingHttpStatusCodeException f)
+						{
+							f.printStackTrace();
+							break;
+						}
+						catch(IOException e)
+						{
+							e.printStackTrace();
+							break;
+						}
+						catch(Exception e)
+						{
+							// Catches unexpected and undeclared exceptions
+							e.printStackTrace();
+							break;
+						}
 						
 						// Checks if the input was sanitized (changed) at all
 						if(resultingPage.getUrl().getQuery() != null)
@@ -634,7 +674,6 @@ public class SiteInformationManager
 					
 					if(!unsanitizedInputs.equals(""))
 					{
-					
 						if(form.getForm().getId() == null && input.getId() == null)
 						{
 							vulnerabilityReport.append("Page: " + pageName + "| Form: ID-less" + " | Input: ID=less\n" +

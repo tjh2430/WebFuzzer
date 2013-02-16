@@ -42,6 +42,7 @@ michael
 ninja    
 mustang
 password1
+changeme
 
 sanitization checking inputs:
 <script>

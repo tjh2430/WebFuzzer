@@ -4,5 +4,6 @@ password: password
 password_guessing: off
 authentication_success_string: You have logged in as 'admin' 
 site_url: http://127.0.0.1/dvwa/login.php
+base_url: http://127.0.0.1/dvwa/
 time_gap: 0
 completeness: 100

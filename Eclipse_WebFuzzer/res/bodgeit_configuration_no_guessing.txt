@@ -4,5 +4,6 @@ password: password
 password_guessing: off
 authentication_success_string: logged in successfully 
 site_url: http://127.0.0.1:8080/bodgeit/
+base_url: http://127.0.0.1:8080/bodgeit/
 time_gap: 0
 completeness: 100

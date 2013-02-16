@@ -74,5 +74,10 @@ public class Fuzzer
 		{
 			e.printStackTrace();
 		}
+		catch (Exception e)
+		{
+			// Catches unexpected and undeclared exceptions
+			e.printStackTrace();
+		}
 	}
 }
